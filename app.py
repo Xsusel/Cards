@@ -276,13 +276,15 @@ def on_play_cards(data):
 
     # Verify cards are in hand
     hand = game.players[sid]['hand']
-    for c in cards:
-        if c not in hand:
-            return # Cheating?
+    temp_hand = list(hand)
+    try:
+        for c in cards:
+            temp_hand.remove(c)
+    except ValueError:
+        return # Cheating or sync error
 
     # Remove from hand
-    for c in cards:
-        hand.remove(c)
+    game.players[sid]['hand'] = temp_hand
 
     game.table_cards.append({
         'sid': sid,

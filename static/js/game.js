@@ -563,14 +563,32 @@ function fireConfetti() {
 function showGameOver(winner) {
     gameOverModal = document.createElement('div');
     gameOverModal.className = 'modal-overlay';
-    gameOverModal.innerHTML = `
-        <div class="modal-content">
-            <h1>KONIEC GRY!</h1>
-            <p>Mistrz humoru:</p>
-            <h2 style="font-size:3rem;color:#2ecc71">${winner}</h2>
-            <button class="modal-btn" onclick="socket.emit('start_game')">REWANŻ</button>
-        </div>
-    `;
+
+    const content = document.createElement('div');
+    content.className = 'modal-content';
+
+    const h1 = document.createElement('h1');
+    h1.textContent = 'KONIEC GRY!';
+
+    const p = document.createElement('p');
+    p.textContent = 'Mistrz humoru:';
+
+    const h2 = document.createElement('h2');
+    h2.textContent = winner;
+    h2.style.fontSize = '3rem';
+    h2.style.color = '#2ecc71';
+
+    const btn = document.createElement('button');
+    btn.className = 'modal-btn';
+    btn.textContent = 'REWANŻ';
+    btn.onclick = () => socket.emit('start_game');
+
+    content.appendChild(h1);
+    content.appendChild(p);
+    content.appendChild(h2);
+    content.appendChild(btn);
+
+    gameOverModal.appendChild(content);
     document.body.appendChild(gameOverModal);
     fireConfetti();
 }

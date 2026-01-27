@@ -6,7 +6,7 @@ def run(playwright):
     page = context.new_page()
 
     # 1. Login
-    page.goto("http://localhost:5000")
+    page.goto("http://localhost:3000")
     page.fill("#nickname", "HostPlayer")
     page.fill("#password", "1234")
     page.click("#join-btn")
