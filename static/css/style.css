@@ -292,6 +292,40 @@ button {
     font-weight: bold;
 }
 
+/* Joker Cards (Twoja stara / Twój stary) */
+@keyframes jokerPulse {
+    0% { transform: scale(1); box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
+    50% { transform: scale(1.03); box-shadow: 0 0 25px gold; }
+    100% { transform: scale(1); box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
+}
+
+.joker-card {
+    background: linear-gradient(135deg, #1a1a1a, #000);
+    border: 2px solid gold !important;
+    color: gold !important;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    animation: jokerPulse 2s infinite ease-in-out;
+}
+
+.joker-card:hover {
+    animation: none;
+    box-shadow: 0 0 35px gold;
+    transform: translateY(-20px) scale(1.05);
+    background: linear-gradient(135deg, #000, #1a1a1a);
+}
+
+.joker-card.selected {
+    box-shadow: 0 0 30px gold;
+}
+
+.joker-card.selected::after {
+    background: gold;
+    color: #000;
+}
+
 /* Marker for manually filled blanks */
 .filled-blank {
     border: 2px dashed #666;
