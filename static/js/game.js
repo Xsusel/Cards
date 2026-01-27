@@ -28,8 +28,21 @@ const settingsBtn = document.getElementById('settings-btn');
 const settingsModal = document.getElementById('settings-modal');
 const closeSettingsBtn = document.getElementById('close-settings-btn');
 const saveSettingsBtn = document.getElementById('save-settings-btn');
+
 const setMaxScore = document.getElementById('set-max-score');
 const setTimer = document.getElementById('set-timer');
+const setBlankCards = document.getElementById('set-blank-cards');
+const volumeSlider = document.getElementById('volume-slider');
+const volumeVal = document.getElementById('volume-val');
+
+const statBlackCount = document.getElementById('stat-black-count');
+const statWhiteCount = document.getElementById('stat-white-count');
+
+// Blank Modal
+const blankModal = document.getElementById('blank-card-modal');
+const blankInput = document.getElementById('blank-card-input');
+const confirmBlankBtn = document.getElementById('confirm-blank-btn');
+const cancelBlankBtn = document.getElementById('cancel-blank-btn');
 
 let gameOverModal = null;
 
@@ -40,7 +53,8 @@ let isHost = false;
 let currentHand = [];
 let gameState = 'LOBBY';
 let pickAmount = 1;
-let selectedCards = []; // Lista tekstów wybranych kart
+let selectedCards = []; // Lista tekstów wybranych kart (strings)
+let pendingBlankCard = null; // Przechowuje element DOM karty, którą edytujemy
 
 // --- LOGOWANIE I INICJALIZACJA ---
 
@@ -65,17 +79,73 @@ if(closeSettingsBtn) {
          settingsModal.classList.add('hidden');
     });
 }
+if(volumeSlider) {
+    volumeSlider.addEventListener('input', (e) => {
+        const val = e.target.value;
+        volumeVal.textContent = val + '%';
+        soundManager.setVolume(val / 100);
+    });
+}
 if(saveSettingsBtn) {
     saveSettingsBtn.addEventListener('click', () => {
          const maxScore = parseInt(setMaxScore.value);
          const timer = parseInt(setTimer.value);
+         const blanks = parseInt(setBlankCards.value);
+
          if(maxScore && timer) {
-            socket.emit('update_settings', { max_score: maxScore, timer_duration: timer });
+            socket.emit('update_settings', {
+                max_score: maxScore,
+                timer_duration: timer,
+                blank_cards: blanks
+            });
             settingsModal.classList.add('hidden');
             soundManager.playClick();
          }
     });
 }
+
+// Blank Card Modal Events
+if(confirmBlankBtn) {
+    confirmBlankBtn.addEventListener('click', () => {
+        const text = blankInput.value.trim();
+        if(!text) return;
+
+        if(pendingBlankCard) {
+            // Replace visual
+            pendingBlankCard.textContent = text;
+            pendingBlankCard.classList.add('filled-blank'); // Marker style
+            // Replace in selection logic
+            // Remove '<<BLANK>>' and add custom text
+            const idx = selectedCards.indexOf('<<BLANK>>');
+            if(idx > -1) {
+                selectedCards[idx] = text;
+            } else {
+                selectedCards.push(text);
+            }
+
+            pendingBlankCard.classList.add('selected');
+            updateSelectionBadges();
+            updateSelectionUI();
+        }
+
+        blankModal.classList.add('hidden');
+        blankInput.value = '';
+        pendingBlankCard = null;
+    });
+}
+
+if(cancelBlankBtn) {
+    cancelBlankBtn.addEventListener('click', () => {
+        blankModal.classList.add('hidden');
+        blankInput.value = '';
+        if(pendingBlankCard) {
+            // Deselect logic handled by toggle logic beforehand? No, we clicked the card.
+            // If we cancel, we basically just don't select it.
+        }
+        pendingBlankCard = null;
+    });
+}
+
 
 // Obsługa przycisku dołączania
 joinBtn.addEventListener('click', () => {
@@ -147,6 +217,14 @@ socket.on('message', (data) => {
     soundManager.playPop();
 });
 
+// Kicked
+socket.on('kicked', () => {
+    alert("Zostałeś wyrzucony z gry.");
+    localStorage.removeItem('cah_token');
+    location.reload();
+});
+
+
 // Aktualizacja ręki z serwera
 socket.on('hand_update', (data) => {
     updateHand(data.hand);
@@ -178,6 +256,7 @@ socket.on('settings_updated', (settings) => {
 window.updateSettingsUI = (settings) => {
     if(settings.max_score) setMaxScore.value = settings.max_score;
     if(settings.timer_duration) setTimer.value = settings.timer_duration;
+    if(settings.blank_cards !== undefined) setBlankCards.value = settings.blank_cards;
 };
 
 // Główna aktualizacja stanu gry
@@ -188,6 +267,10 @@ socket.on('game_update', (data) => {
     }
 
     gameState = data.state;
+
+    // Stats
+    if(data.total_black) statBlackCount.textContent = data.total_black;
+    if(data.total_white) statWhiteCount.textContent = data.total_white;
 
     // Logika ilości kart do wybrania (Pick 2)
     if (data.current_black_card) {
@@ -242,8 +325,10 @@ confirmPlayBtn.addEventListener('click', () => {
 
     // Lokalna animacja usunięcia
     selectedCards.forEach(cardText => {
+        // Warning: if text is custom, we need to find the element that HAS that text
+        // Or find the element that was marked selected.
         const els = Array.from(handContainer.children);
-        const el = els.find(e => e.textContent === cardText);
+        const el = els.find(e => e.textContent === cardText || (e.classList.contains('filled-blank') && e.textContent === cardText));
         if (el) {
              gsap.to(el, { y: -200, opacity: 0, duration: 0.5 });
         }
@@ -329,6 +414,20 @@ function updatePlayerList(players) {
             badge.className = 'czar-badge';
             badge.textContent = 'CAR';
             li.appendChild(badge);
+        }
+
+        // Kick Button (Host Only)
+        if (isHost && p.nickname !== myNickname) {
+            const kickBtn = document.createElement('button');
+            kickBtn.className = 'kick-btn';
+            kickBtn.innerHTML = '&#10006;'; // X symbol
+            kickBtn.title = 'Wyrzuć gracza';
+            kickBtn.onclick = () => {
+                if(confirm(`Czy na pewno wyrzucić ${p.nickname}?`)) {
+                    socket.emit('kick_player', { nickname: p.nickname });
+                }
+            };
+            li.appendChild(kickBtn);
         }
 
         if (gameState === 'SELECTION' && !p.is_czar && p.has_played) {
@@ -440,7 +539,14 @@ function updateHand(hand) {
     hand.forEach((cardText, index) => {
         const card = document.createElement('div');
         card.className = 'card white-card';
-        card.textContent = cardText;
+
+        if (cardText === '<<BLANK>>') {
+            card.textContent = "PUSTA KARTA";
+            card.style.fontStyle = "italic";
+            card.style.color = "#888";
+        } else {
+            card.textContent = cardText;
+        }
 
         if (selectedCards.includes(cardText)) {
             card.classList.add('selected');
@@ -460,11 +566,31 @@ function updateHand(hand) {
 function toggleCardSelection(cardText, element) {
     if (gameState !== 'SELECTION' || isCzar) return;
 
+    // Check if it's a blank card interaction
+    if (cardText === '<<BLANK>>') {
+        if (selectedCards.includes(cardText)) {
+             // Already selected, deselect
+        } else {
+            // New selection - SHOW MODAL
+            pendingBlankCard = element;
+            blankModal.classList.remove('hidden');
+            blankInput.focus();
+            return; // Stop standard selection logic until confirmed
+        }
+    }
+
+    // Standard Toggle Logic
     if (selectedCards.includes(cardText)) {
         // Odznaczenie
         selectedCards = selectedCards.filter(c => c !== cardText);
         element.classList.remove('selected');
         element.removeAttribute('data-order');
+
+        // If it was a filled blank, revert visual?
+        // Actually, we keep it filled until played, or maybe revert if deselected?
+        // Let's keep it simple: if deselected, it stays as text but is just deselected.
+        // But if cardText matches, it works.
+
         soundManager.playClick();
     } else {
         // Zaznaczenie
@@ -487,11 +613,22 @@ function updateSelectionBadges() {
     const cards = handContainer.querySelectorAll('.card');
     cards.forEach(c => {
         const text = c.textContent;
+        // Check if this element corresponds to a selected card
+        // Note: For filled blanks, element text is custom, selectedCards has custom.
+        // For blank placeholders, element text is "PUSTA KARTA", selectedCards has '<<BLANK>>'? No.
+        // If we replaced blank, selectedCards has custom text.
+
         const idx = selectedCards.indexOf(text);
         if (idx > -1) {
             c.setAttribute('data-order', idx + 1);
         } else {
-            c.removeAttribute('data-order');
+            // Special check for non-filled blanks?
+            if (text === "PUSTA KARTA" && selectedCards.includes('<<BLANK>>')) {
+                 const i = selectedCards.indexOf('<<BLANK>>');
+                 c.setAttribute('data-order', i+1);
+            } else {
+                c.removeAttribute('data-order');
+            }
         }
     });
 }
@@ -592,6 +729,3 @@ function showGameOver(winner) {
     document.body.appendChild(gameOverModal);
     fireConfetti();
 }
-
-// Inicjalizacja tła - wywołuje funkcję z background.js
-// function initBackgroundAnimation() is defined in background.js and attached to window

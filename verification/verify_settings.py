@@ -34,9 +34,8 @@ def run(playwright):
 
     # 5. Verify Toast
     # Toast appears dynamically
-    toast = page.locator(".toast").first
+    toast = page.locator(".toast", has_text="Ustawienia zaktualizowane").first
     expect(toast).to_be_visible()
-    expect(toast).to_contain_text("Ustawienia zaktualizowane")
 
     # Screenshot Toast
     page.screenshot(path="verification/settings_toast.png")
