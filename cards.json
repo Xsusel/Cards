@@ -1,45 +1,405 @@
 {
   "blackCards": [
-    {"text": "Dlaczego nie mogę spać w nocy?", "pick": 1},
-    {"text": "Mam 99 problemów, ale _____ nie jest jednym z nich.", "pick": 1},
-    {"text": "Co to za zapach?", "pick": 1},
-    {"text": "W nowym filmie Disneya, Hanna Montana zmaga się z _____.", "pick": 1},
-    {"text": "Co zakończyło mój ostatni związek?", "pick": 1},
-    {"text": "W tym sezonie na Broadwayu: _____: Musical.", "pick": 1},
-    {"text": "Kolejna książka J.K. Rowling: Harry Potter i Komnata _____.", "pick": 1},
-    {"text": "Wojna! Do czego jest dobra?", "pick": 1},
-    {"text": "Co ukrywają przede mną moi rodzice?", "pick": 1},
-    {"text": "Krok 1: _____. Krok 2: Zysk.", "pick": 1},
-    {"text": "Co jest moim tajnym fetyszem?", "pick": 1},
-    {"text": "Przepraszam panie profesorze, ale nie odrobiłem pracy domowej z powodu _____.", "pick": 1},
-    {"text": "Co bym zabrał na bezludną wyspę?", "pick": 1},
-    {"text": "Jaki jest sens życia?", "pick": 1},
-    {"text": "Co znaleziono w szafie Michaela Jacksona?", "pick": 1},
-    {"text": "Podczas seksu lubię myśleć o _____.", "pick": 1},
-    {"text": "Co jest najlepszym lekarstwem na kaca?", "pick": 1},
-    {"text": "Dlaczego boli mnie całe ciało?", "pick": 1},
-    {"text": "Co sprawia, że jestem nieodparty dla kobiet?", "pick": 1},
-    {"text": "W alternatywnym wszechświecie, Polska jest znana z _____.", "pick": 1},
-    {"text": "Biały dom został właśnie zaatakowany przez _____.", "pick": 1},
-    {"text": "Co jest w moim Happy Meal?", "pick": 1},
-    {"text": "Gdybym był miliarderem, postawiłbym 50-metrowy pomnik _____.", "pick": 1},
-    {"text": "Co zrujnowało moje dzieciństwo?", "pick": 1},
-    {"text": "Najnowszy hit internetu: kot grający na _____.", "pick": 1},
-    {"text": "Co babcia ukrywa w słoiku po ogórkach?", "pick": 1},
-    {"text": "Jak straciłem dziewictwo?", "pick": 1},
-    {"text": "Co jest gorsze od Hitlera?", "pick": 1},
-    {"text": "Zamiast węgla, Mikołaj przyniósł mi _____.", "pick": 1},
-    {"text": "Co powiedział ksiądz po spowiedzi?", "pick": 1},
-    {"text": "Polska mistrzem Polski w _____.", "pick": 1},
-    {"text": "Co jest winne globalnemu ociepleniu?", "pick": 1},
-    {"text": "Czym umyć plamy z krwi?", "pick": 1},
-    {"text": "Co robię, gdy nikt nie patrzy?", "pick": 1},
-    {"text": "Jaki jest mój superbohaterski pseudonim?", "pick": 1},
-    {"text": "Dla _____ oddałbym wszystko, nawet _____.", "pick": 2},
-    {"text": "Mój plan na podryw: Najpierw _____, a potem _____.", "pick": 2},
-    {"text": "Życie było smutne, dopóki nie odkryłem połączenia _____ i _____.", "pick": 2},
-    {"text": "W nowym testamencie Jezus zamienia _____ w _____.", "pick": 2},
-    {"text": "Co pasuje do siebie jak _____ i _____?", "pick": 2}
+    {
+      "text": "Dlaczego nie mogę spać w nocy?",
+      "pick": 1
+    },
+    {
+      "text": "Mam 99 problemów, ale _____ nie jest jednym z nich.",
+      "pick": 1
+    },
+    {
+      "text": "Co to za zapach?",
+      "pick": 1
+    },
+    {
+      "text": "W nowym filmie Disneya, Hanna Montana zmaga się z _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co zakończyło mój ostatni związek?",
+      "pick": 1
+    },
+    {
+      "text": "W tym sezonie na Broadwayu: _____: Musical.",
+      "pick": 1
+    },
+    {
+      "text": "Kolejna książka J.K. Rowling: Harry Potter i Komnata _____.",
+      "pick": 1
+    },
+    {
+      "text": "Wojna! Do czego jest dobra?",
+      "pick": 1
+    },
+    {
+      "text": "Co ukrywają przede mną moi rodzice?",
+      "pick": 1
+    },
+    {
+      "text": "Krok 1: _____. Krok 2: Zysk.",
+      "pick": 1
+    },
+    {
+      "text": "Co jest moim tajnym fetyszem?",
+      "pick": 1
+    },
+    {
+      "text": "Przepraszam panie profesorze, ale nie odrobiłem pracy domowej z powodu _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co bym zabrał na bezludną wyspę?",
+      "pick": 1
+    },
+    {
+      "text": "Jaki jest sens życia?",
+      "pick": 1
+    },
+    {
+      "text": "Co znaleziono w szafie Michaela Jacksona?",
+      "pick": 1
+    },
+    {
+      "text": "Podczas seksu lubię myśleć o _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co jest najlepszym lekarstwem na kaca?",
+      "pick": 1
+    },
+    {
+      "text": "Dlaczego boli mnie całe ciało?",
+      "pick": 1
+    },
+    {
+      "text": "Co sprawia, że jestem nieodparty dla kobiet?",
+      "pick": 1
+    },
+    {
+      "text": "W alternatywnym wszechświecie, Polska jest znana z _____.",
+      "pick": 1
+    },
+    {
+      "text": "Biały dom został właśnie zaatakowany przez _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co jest w moim Happy Meal?",
+      "pick": 1
+    },
+    {
+      "text": "Gdybym był miliarderem, postawiłbym 50-metrowy pomnik _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co zrujnowało moje dzieciństwo?",
+      "pick": 1
+    },
+    {
+      "text": "Najnowszy hit internetu: kot grający na _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co babcia ukrywa w słoiku po ogórkach?",
+      "pick": 1
+    },
+    {
+      "text": "Jak straciłem dziewictwo?",
+      "pick": 1
+    },
+    {
+      "text": "Co jest gorsze od Hitlera?",
+      "pick": 1
+    },
+    {
+      "text": "Zamiast węgla, Mikołaj przyniósł mi _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co powiedział ksiądz po spowiedzi?",
+      "pick": 1
+    },
+    {
+      "text": "Polska mistrzem Polski w _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co jest winne globalnemu ociepleniu?",
+      "pick": 1
+    },
+    {
+      "text": "Czym umyć plamy z krwi?",
+      "pick": 1
+    },
+    {
+      "text": "Co robię, gdy nikt nie patrzy?",
+      "pick": 1
+    },
+    {
+      "text": "Jaki jest mój superbohaterski pseudonim?",
+      "pick": 1
+    },
+    {
+      "text": "Dla _____ oddałbym wszystko, nawet _____.",
+      "pick": 2
+    },
+    {
+      "text": "Mój plan na podryw: Najpierw _____, a potem _____.",
+      "pick": 2
+    },
+    {
+      "text": "Życie było smutne, dopóki nie odkryłem połączenia _____ i _____.",
+      "pick": 2
+    },
+    {
+      "text": "W nowym testamencie Jezus zamienia _____ w _____.",
+      "pick": 2
+    },
+    {
+      "text": "Co pasuje do siebie jak _____ i _____?",
+      "pick": 2
+    },
+    {
+      "text": "Moi rodzice są dumni, że ostatecznie rzuciłem _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co tak naprawdę zabiło dinozaury?",
+      "pick": 1
+    },
+    {
+      "text": "W nowej, lepszej Polsce, hymnem narodowym będzie _____.",
+      "pick": 1
+    },
+    {
+      "text": "Lekarz powiedział, że mam trzy dni życia i jedynym lekarstwem jest _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co robię, żeby zagłuszyć głosy w mojej głowie?",
+      "pick": 1
+    },
+    {
+      "text": "Z pamiętnika nastolatki: 'Drogi pamiętniczku, dzisiaj po raz pierwszy spróbowałam _____.'",
+      "pick": 1
+    },
+    {
+      "text": "Kiedy zostanę premierem, wprowadzę obowiązkowe _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co jest najgorszym prezentem na pierwszą komunię?",
+      "pick": 1
+    },
+    {
+      "text": "Jaki jest sekret długowieczności Królowej Elżbiety?",
+      "pick": 1
+    },
+    {
+      "text": "W niebie nie ma piwa, ale jest _____.",
+      "pick": 1
+    },
+    {
+      "text": "Seks jest fajny, ale czy próbowałeś kiedyś _____?",
+      "pick": 1
+    },
+    {
+      "text": "Co znalazłem w historii przeglądarki mojego dziadka?",
+      "pick": 1
+    },
+    {
+      "text": "Prawdziwym powodem wybuchu w Czarnobylu było _____.",
+      "pick": 1
+    },
+    {
+      "text": "Dzieci w Afryce mogłyby zjeść _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co łączy mnie i Jana Pawła II?",
+      "pick": 1
+    },
+    {
+      "text": "Dlaczego nie zostałem księdzem?",
+      "pick": 1
+    },
+    {
+      "text": "Co jest twarde, ma 15 cm i sprawia, że kobiety płaczą?",
+      "pick": 1
+    },
+    {
+      "text": "Mamo, tato... jestem _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co najlepiej pasuje do barszczu z uszkami?",
+      "pick": 1
+    },
+    {
+      "text": "Na łożu śmierci wyznam, że ukryłem _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co bym zrobił za paczkę fajek?",
+      "pick": 1
+    },
+    {
+      "text": "Jaki jest smak porażki?",
+      "pick": 1
+    },
+    {
+      "text": "W następnym odcinku 'Trudnych Spraw': Grażyna odkrywa, że jej mąż to _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co sprawia, że impreza jest udana?",
+      "pick": 1
+    },
+    {
+      "text": "Moja supermoc to _____.",
+      "pick": 1
+    },
+    {
+      "text": "Najgorsza rzecz, jaką można usłyszeć podczas seksu to _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co dostałem na walentynki?",
+      "pick": 1
+    },
+    {
+      "text": "Dlaczego znowu jestem singlem?",
+      "pick": 1
+    },
+    {
+      "text": "Co jest moim spirit animal?",
+      "pick": 1
+    },
+    {
+      "text": "Wpiekło zamarznie, kiedy _____.",
+      "pick": 1
+    },
+    {
+      "text": "_____. To dlatego nie możemy mieć ładnych rzeczy.",
+      "pick": 1
+    },
+    {
+      "text": "Kiedyś byłem normalny, a potem stało się _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co ukrywam w piwnicy?",
+      "pick": 1
+    },
+    {
+      "text": "Co jest przyczyną moich nocnych koszmarów?",
+      "pick": 1
+    },
+    {
+      "text": "Zamiast 500+, rząd powinien rozdawać _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co zrobiłbym, gdybym był niewidzialny?",
+      "pick": 1
+    },
+    {
+      "text": "Co jest gorsze niż poniedziałek rano?",
+      "pick": 1
+    },
+    {
+      "text": "Jaki jest mój talent w Mam Talent?",
+      "pick": 1
+    },
+    {
+      "text": "Co leży na dnie Rowu Mariańskiego?",
+      "pick": 1
+    },
+    {
+      "text": "Co jest zakazane w Biblii, ale wszyscy to robią?",
+      "pick": 1
+    },
+    {
+      "text": "Co jest najczęstszą przyczyną rozwodów?",
+      "pick": 1
+    },
+    {
+      "text": "Co bym zrobił, gdybym był ostatnim człowiekiem na Ziemi?",
+      "pick": 1
+    },
+    {
+      "text": "Co jest moim największym lękiem?",
+      "pick": 1
+    },
+    {
+      "text": "Co jest najlepszym sposobem na nudę?",
+      "pick": 1
+    },
+    {
+      "text": "Co jest moją życiową dewizą?",
+      "pick": 1
+    },
+    {
+      "text": "Co bym zmienił w sobie operacją plastyczną?",
+      "pick": 1
+    },
+    {
+      "text": "Co jest najgorszym miejscem na randkę?",
+      "pick": 1
+    },
+    {
+      "text": "Co bym powiedział kosmitom?",
+      "pick": 1
+    },
+    {
+      "text": "Co jest najbardziej bezużyteczną rzeczą na świecie?",
+      "pick": 1
+    },
+    {
+      "text": "Co jest moim największym osiągnięciem?",
+      "pick": 1
+    },
+    {
+      "text": "Wystarczy kropla _____, by zepsuć całą imprezę.",
+      "pick": 1
+    },
+    {
+      "text": "Najlepszy sposób na niechcianą ciążę to _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co łączy Hitlera i _____?",
+      "pick": 1
+    },
+    {
+      "text": "Mój terapeuta twierdzi, że moim problemem jest _____.",
+      "pick": 1
+    },
+    {
+      "text": "Co robię, gdy kończy się papier toaletowy?",
+      "pick": 1
+    },
+    {
+      "text": "Jaki jest najlepszy sposób na pozbycie się zwłok?",
+      "pick": 1
+    },
+    {
+      "text": "Co jest w moim słoiku z marzeniami?",
+      "pick": 1
+    },
+    {
+      "text": "Co bym zrobił za milion złotych?",
+      "pick": 1
+    },
+    {
+      "text": "Co jest moim guilty pleasure?",
+      "pick": 1
+    },
+    {
+      "text": "Co jest gorsze niż śmierć?",
+      "pick": 1
+    }
   ],
   "whiteCards": [
     "Morze kłopotów.",
@@ -128,6 +488,573 @@
     "Dzień Dziadka.",
     "Dzień Nauczyciela.",
     "Dzień Strażaka.",
-    "Dzień Policjanta."
+    "Dzień Policjanta.",
+    "Sperma.",
+    "Bukkake.",
+    "Niechciana ciąża.",
+    "Skrobanka w czeskim szpitalu.",
+    "Martwy płód.",
+    "Ksiądz pedofil.",
+    "Gwałt zbiorowy.",
+    "Ruchanie małych dzieci.",
+    "Wkładanie palca w dupę.",
+    "Twoja stara pjana.",
+    "Sranie do paczkomatu.",
+    "Rzyganie na dywan.",
+    "Menel spod żabki.",
+    "Tani spirytus z mety.",
+    "Kac morderca.",
+    "Pigułka gwałtu.",
+    "Handel ludźmi.",
+    "Niewolnictwo.",
+    "Holokaust.",
+    "Komora gazowa.",
+    "Auschwitz.",
+    "Adolf Hitler w stringach.",
+    "Józef Stalin tańczący kankana.",
+    "Osama bin Laden.",
+    "Zamach na WTC.",
+    "Smoleńsk.",
+    "Brzoza smoleńska.",
+    "Antoni Macierewicz.",
+    "Tadeusz Rydzyk.",
+    "Radioaktywne odpady.",
+    "Rak jąder.",
+    "AIDS.",
+    "Kiła.",
+    "Rzeżączka.",
+    "Grzybica pochwy.",
+    "Śmierdzące stopy.",
+    "Mocz w basenie.",
+    "Kupa na chodniku.",
+    "Rozjechany kot.",
+    "Martwa prostytutka.",
+    "Dziwka bez zęba.",
+    "Transwestyta.",
+    "Bieda.",
+    "Głód w Afryce.",
+    "Ebola.",
+    "Koronawirus.",
+    "Szczepionka z czipem.",
+    "Płaska Ziemia.",
+    "Foliarze.",
+    "Antyszczepionkowcy.",
+    "Ku Klux Klan.",
+    "Nazistowskie złoto.",
+    "Żydowskie roszczenia.",
+    "Czarny humor.",
+    "Rasizm.",
+    "Ksenofobia.",
+    "Homofobia.",
+    "Mizoginia.",
+    "Feminizm.",
+    "Gender.",
+    "LGBT.",
+    "Parada Równości.",
+    "Marsz Niepodległości.",
+    "Bójka pod remizą.",
+    "Wiejskie wesele.",
+    "Disco polo na full.",
+    "Janusz i Grażyna.",
+    "Sandały i skarpety.",
+    "Parawany na plaży.",
+    "Cebula.",
+    "Polaki-cebulaki.",
+    "Złodzieje.",
+    "Pijani kierowcy.",
+    "Łapówka.",
+    "Korupcja.",
+    "ZUS.",
+    "Urząd Skarbowy.",
+    "Komornik.",
+    "Windykator.",
+    "Kredyt we frankach.",
+    "Chwilówka.",
+    "Hazard.",
+    "Prostytucja.",
+    "Narkotyki.",
+    "Kokaina.",
+    "Heroina.",
+    "Mefedron.",
+    "Dopalacze.",
+    "Klejenie się.",
+    "Masturbacja w miejscu publicznym.",
+    "Ekshibicjonizm.",
+    "Podglądanie.",
+    "Stalking.",
+    "Przemoc domowa.",
+    "Bicie żony.",
+    "Bicie dzieci.",
+    "Zupa pomidorowa z rosołu z wczoraj.",
+    "Odgrzewany kotlet.",
+    "Spleśniały chleb.",
+    "Przeterminowane mleko.",
+    "Robaki w mące.",
+    "Szczur w kanale.",
+    "Karaluchy pod podłogą.",
+    "Pluskwy w łóżku.",
+    "Wszy.",
+    "Świerzb.",
+    "Grzyb na ścianie.",
+    "Smog.",
+    "Dziura w drodze.",
+    "Korek na autostradzie.",
+    "Opóźniony pociąg PKP.",
+    "Brudny pociąg TLK.",
+    "Śmierdzący autobus.",
+    "Tłok w tramwaju.",
+    "Kanar.",
+    "Mandat.",
+    "Punkty karne.",
+    "Utrata prawa jazdy.",
+    "Izba wytrzeźwień.",
+    "Areszt śledczy.",
+    "Więzienie.",
+    "Dożywocie.",
+    "Kara śmierci.",
+    "Krzesło elektryczne.",
+    "Zastrzyk trucizny.",
+    "Szubienica.",
+    "Gilotyna.",
+    "Topór kata.",
+    "Palenie na stosie.",
+    "Tortury.",
+    "Łamanie kołem.",
+    "Obdzieranie ze skóry.",
+    "Wbijanie na pal.",
+    "Ukrzyżowanie.",
+    "Ukamienowanie.",
+    "Lincz.",
+    "Samosąd.",
+    "Wendeta.",
+    "Zemsta.",
+    "Nienawiść.",
+    "Zazdrość.",
+    "Chciwość.",
+    "Pycha.",
+    "Lenistwo.",
+    "Obżarstwo.",
+    "Nieczystość.",
+    "Grzech.",
+    "Piekło.",
+    "Szatan.",
+    "Diabeł.",
+    "Demon.",
+    "Egzorcysta.",
+    "Opętanie.",
+    "Czarna msza.",
+    "Ofiara z ludzi.",
+    "Krew dziewicy.",
+    "Seks z kozą.",
+    "Seks z psem.",
+    "Seks z koniem.",
+    "Seks z trupem.",
+    "Seks z rodzeństwem.",
+    "Seks z rodzicami.",
+    "Kazirodztwo.",
+    "Pedalstwo.",
+    "Lesbijstwo.",
+    "Transseksualizm.",
+    "Obojnactwo.",
+    "Kastracja.",
+    "Obrzezanie.",
+    "Sterylizacja.",
+    "Eutanazja.",
+    "Samobójstwo.",
+    "Pocięcie się.",
+    "Skok z mostu.",
+    "Strzał w głowę.",
+    "Pętla na szyi.",
+    "Tabletki nasenne.",
+    "Gaz w piekarniku.",
+    "Wypadek samochodowy.",
+    "Katastrofa lotnicza.",
+    "Zatonięcie statku.",
+    "Pożar.",
+    "Powódź.",
+    "Trzęsienie ziemi.",
+    "Tsunami.",
+    "Huragan.",
+    "Tornado.",
+    "Wybuch wulkanu.",
+    "Meteoryt.",
+    "Koniec świata.",
+    "Apokalipsa.",
+    "Armagedon.",
+    "Sąd Ostateczny.",
+    "Zmartwychwstanie.",
+    "Życie wieczne.",
+    "Reinkarnacja.",
+    "Karma.",
+    "Przeznaczenie.",
+    "Los.",
+    "Przypadek.",
+    "Szczęście.",
+    "Pech.",
+    "Nieszczęście.",
+    "Tragedia.",
+    "Dramat.",
+    "Komedia.",
+    "Farsa.",
+    "Kabaret.",
+    "Stand-up.",
+    "Żart.",
+    "Dowcip.",
+    "Kawał.",
+    "Suchar.",
+    "Mem.",
+    "Internet.",
+    "Facebook.",
+    "Instagram.",
+    "TikTok.",
+    "YouTube.",
+    "Pornhub.",
+    "Redtube.",
+    "Xvideos.",
+    "Brazzers.",
+    "Fake Taxi.",
+    "Casting Couch.",
+    "Money Shot.",
+    "Facial.",
+    "Creampie.",
+    "Squirt.",
+    "Anal.",
+    "Oral.",
+    "69.",
+    "BDSM.",
+    "Sado-maso.",
+    "Dominacja.",
+    "Uległość.",
+    "Knebel.",
+    "Kajdanki.",
+    "Bicz.",
+    "Szpicruta.",
+    "Lateks.",
+    "Skóra.",
+    "Guma.",
+    "Wibrator.",
+    "Dildo.",
+    "Korkociąg analny.",
+    "Kulki gejszy.",
+    "Lalka dmuchana.",
+    "Sztuczna pochwa.",
+    "Penis.",
+    "Wagina.",
+    "Cycki.",
+    "Tyłek.",
+    "Cipa.",
+    "Chuj.",
+    "Kutas.",
+    "Fiut.",
+    "Jaja.",
+    "Wory.",
+    "Suty.",
+    "Łechtaczka.",
+    "Punkt G.",
+    "Orgazm.",
+    "Wtrysk.",
+    "Wytrysk.",
+    "Sperma na twarzy.",
+    "Sperma w oku.",
+    "Sperma we włosach.",
+    "Połknięcie.",
+    "Wyplucie.",
+    "Smak spermy.",
+    "Zapach cipy.",
+    "Smród dupy.",
+    "Bąk.",
+    "Pierdnięcie.",
+    "Beknięcie.",
+    "Czkawka.",
+    "Kichnięcie.",
+    "Kaszel.",
+    "Katar.",
+    "Gorączka.",
+    "Ból głowy.",
+    "Ból brzucha.",
+    "Ból zęba.",
+    "Ból dupy.",
+    "Ból istnienia.",
+    "Depresja.",
+    "Nerwica.",
+    "Schizofrenia.",
+    "Paranoja.",
+    "Psychopatia.",
+    "Socjopatia.",
+    "Narcyzm.",
+    "Egoizm.",
+    "Altruizm.",
+    "Miłość.",
+    "Nienawiść.",
+    "Przyjaźń.",
+    "Wrogość.",
+    "Wierność.",
+    "Zdrada.",
+    "Zaufanie.",
+    "Podejrzliwość.",
+    "Szczerość.",
+    "Kłamstwo.",
+    "Prawda.",
+    "Fałsz.",
+    "Dobro.",
+    "Zło.",
+    "Bóg.",
+    "Szatan.",
+    "Anioł.",
+    "Diabeł.",
+    "Niebo.",
+    "Piekło.",
+    "Czyściec.",
+    "Limbo.",
+    "Nicość.",
+    "Pustka.",
+    "Ciemność.",
+    "Jasność.",
+    "Światło.",
+    "Cień.",
+    "Dzień.",
+    "Noc.",
+    "Słońce.",
+    "Księżyc.",
+    "Gwiazdy.",
+    "Kosmos.",
+    "Wszechświat.",
+    "Galaktyka.",
+    "Droga Mleczna.",
+    "Układ Słoneczny.",
+    "Ziemia.",
+    "Mars.",
+    "Wenus.",
+    "Jowisz.",
+    "Saturn.",
+    "Uran.",
+    "Neptun.",
+    "Pluton.",
+    "Planeta X.",
+    "UFO.",
+    "Kosmici.",
+    "Obcy.",
+    "Predator.",
+    "Terminator.",
+    "Robocop.",
+    "Rambo.",
+    "Rocky.",
+    "Godzilla.",
+    "King Kong.",
+    "Frankenstein.",
+    "Drakula.",
+    "Wilkołak.",
+    "Zombie.",
+    "Wampir.",
+    "Duch.",
+    "Zjawa.",
+    "Upiór.",
+    "Potwór.",
+    "Bestia.",
+    "Szatan.",
+    "Lucyfer.",
+    "Belzebub.",
+    "Mefisto.",
+    "Antychryst.",
+    "Bestia z Wadowic.",
+    "Kremówki.",
+    "Dzieci.",
+    "Przedszkole.",
+    "Szkoła.",
+    "Gimnazjum.",
+    "Liceum.",
+    "Studia.",
+    "Praca.",
+    "Emerytura.",
+    "Renta.",
+    "Zasiłek.",
+    "Bezrobocie.",
+    "Biedronka.",
+    "Lidl.",
+    "Żabka.",
+    "Tesco.",
+    "Auchan.",
+    "Carrefour.",
+    "Kaufland.",
+    "Netto.",
+    "Dino.",
+    "Lewiatan.",
+    "ABC.",
+    "Groszek.",
+    "Społem.",
+    "Ruch.",
+    "Orlen.",
+    "Lotos.",
+    "Shell.",
+    "BP.",
+    "Circle K.",
+    "Amic.",
+    "Moya.",
+    "McDonald's.",
+    "KFC.",
+    "Burger King.",
+    "Pizza Hut.",
+    "Domino's.",
+    "Subway.",
+    "Kebab.",
+    "Zapiekanka.",
+    "Hot-dog.",
+    "Hamburger.",
+    "Cheeseburger.",
+    "Frytki.",
+    "Cola.",
+    "Pepsi.",
+    "Fanta.",
+    "Sprite.",
+    "Mirinda.",
+    "7Up.",
+    "Tymbark.",
+    "Kubuś.",
+    "Frugo.",
+    "Red Bull.",
+    "Monster.",
+    "Black.",
+    "Tiger.",
+    "Kawa.",
+    "Herbata.",
+    "Woda.",
+    "Piwo.",
+    "Wino.",
+    "Whisky.",
+    "Rum.",
+    "Gin.",
+    "Tequila.",
+    "Likier.",
+    "Szampan.",
+    "Prosecco.",
+    "Cydr.",
+    "Bimber.",
+    "Samogon.",
+    "Denaturat.",
+    "Borygo.",
+    "Płyn do spryskiwaczy.",
+    "Perfumy.",
+    "Dezodorant.",
+    "Woda kolońska.",
+    "Mydło.",
+    "Szampon.",
+    "Żel pod prysznic.",
+    "Pasta do zębów.",
+    "Szczoteczka.",
+    "Papier toaletowy.",
+    "Podpaski.",
+    "Tampony.",
+    "Pieluchy.",
+    "Chusteczki.",
+    "Ręcznik.",
+    "Prześcieradło.",
+    "Kołdra.",
+    "Poduszka.",
+    "Koc.",
+    "Materac.",
+    "Łóżko.",
+    "Szafa.",
+    "Stół.",
+    "Krzesło.",
+    "Fotel.",
+    "Kanapa.",
+    "Telewizor.",
+    "Komputer.",
+    "Laptop.",
+    "Tablet.",
+    "Telefon.",
+    "Smartfon.",
+    "Konsola.",
+    "Pad.",
+    "Myszka.",
+    "Klawiatura.",
+    "Monitor.",
+    "Głośniki.",
+    "Słuchawki.",
+    "Mikrofon.",
+    "Kamera.",
+    "Aparat.",
+    "Drukarka.",
+    "Skaner.",
+    "Router.",
+    "Modem.",
+    "Kabel.",
+    "Wtyczka.",
+    "Gniazdko.",
+    "Prąd.",
+    "Gaz.",
+    "Woda.",
+    "Czynsz.",
+    "Rata.",
+    "Podatek.",
+    "Faktura.",
+    "Paragon.",
+    "Pieniądze.",
+    "Gotówka.",
+    "Karta.",
+    "Przelew.",
+    "Blik.",
+    "Bitcoin.",
+    "Kryptowaluty.",
+    "NFT.",
+    "Giełda.",
+    "Akcje.",
+    "Obligacje.",
+    "Złoto.",
+    "Srebro.",
+    "Diamenty.",
+    "Biżuteria.",
+    "Zegarek.",
+    "Samochód.",
+    "Motocykl.",
+    "Rower.",
+    "Hulajnoga.",
+    "Deskorolka.",
+    "Rolki.",
+    "Łyżwy.",
+    "Narty.",
+    "Snowboard.",
+    "Sanki.",
+    "Wózek.",
+    "Inwalida.",
+    "Kaleka.",
+    "Ułomny.",
+    "Głupi.",
+    "Mądry.",
+    "Ładny.",
+    "Brzydki.",
+    "Gruby.",
+    "Chudy.",
+    "Wysoki.",
+    "Niski.",
+    "Stary.",
+    "Młody.",
+    "Bogaty.",
+    "Biedny.",
+    "Zdrowy.",
+    "Chory.",
+    "Żywy.",
+    "Martwy.",
+    "Szczęśliwy.",
+    "Smutny.",
+    "Wesoły.",
+    "Poważny.",
+    "Śmieszny.",
+    "Nudny.",
+    "Ciekawy.",
+    "Zajebisty.",
+    "Chujowy.",
+    "Pojebany.",
+    "Popierdolony.",
+    "Kurwa.",
+    "Ja pierdolę.",
+    "O chuj.",
+    "Japierdole.",
+    "XD.",
+    "Lol.",
+    "Omg.",
+    "Wtf.",
+    "Jp2gmd.",
+    "2137."
   ]
 }
