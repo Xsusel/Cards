@@ -12,6 +12,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 </head>
 <body>
+    <!-- Background Animation Layer -->
+    <div id="bg-animation"></div>
+
     <!-- Ekran logowania -->
     <div id="login-screen">
         <div class="login-container">
@@ -27,9 +30,12 @@
     <div id="game-area" class="hidden">
         <div class="game-header">
             <div class="status-panel">
-                <h2 id="game-status">Oczekiwanie na graczy...</h2>
+                <h2 id="game-status">Oczekiwanie...</h2>
                 <div id="czar-display">Car: <span id="czar-name">-</span></div>
             </div>
+
+            <div id="timer-display" class="hidden">60</div>
+
             <button id="start-btn" class="hidden">ROZPOCZNIJ GRĘ</button>
         </div>
 
@@ -55,6 +61,10 @@
 
         <!-- Ręka gracza -->
         <div id="hand-section">
+            <div id="selection-controls" class="hidden">
+                <span>Wybrano: <span id="selected-count">0</span>/<span id="required-count">1</span></span>
+                <button id="confirm-play-btn" disabled>ZAGRAJ</button>
+            </div>
             <div id="hand-container">
                 <!-- Karty gracza -->
             </div>
@@ -64,6 +74,7 @@
     <!-- Powiadomienia -->
     <div id="toast-container"></div>
 
+    <script src="/static/js/sound.js"></script>
     <script src="/static/js/game.js"></script>
 </body>
 </html>

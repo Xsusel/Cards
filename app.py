@@ -2,38 +2,38 @@ from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit, join_room
 import json
 import random
-import os
+import eventlet
+import time
+
+# Monkey patch for eventlet timer
+eventlet.monkey_patch()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'super_tajny_klucz'
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
-# Ładowanie kart z pliku JSON
-# Baza kart: cards.json
+# Load cards
 try:
     with open('cards.json', 'r', encoding='utf-8') as f:
         CARDS = json.load(f)
 except Exception as e:
-    print(f"Błąd ładowania kart: {e}")
+    print(f"Error loading cards: {e}")
     CARDS = {"blackCards": [], "whiteCards": []}
 
 class Game:
-    """
-    Klasa zarządzająca stanem gry.
-    Przechowuje informacje o graczach, kartach, punktacji i aktualnym stanie rozgrywki.
-    """
     def __init__(self):
-        self.players = {}  # Mapowanie SID -> obiekt gracza {nickname, score, hand, is_czar}
+        self.players = {}
         self.black_deck = []
         self.white_deck = []
         self.current_black_card = None
-        self.table_cards = []  # Karty rzucone na stół: [{'sid': sid, 'card': card_text, 'nickname': nick}]
-        self.czar_sid = None  # SID aktualnego Cara
-        self.state = 'LOBBY'  # Stan gry: LOBBY, SELECTION, JUDGING
-        self.password = "1234"  # Hasło sesji
+        self.table_cards = []  # List of {sid, cards: [text1, text2], nickname}
+        self.czar_sid = None
+        self.state = 'LOBBY'
+        self.password = "1234"
+        self.timer = 0
+        self.timer_thread = None
 
     def reset_game(self):
-        """Resetuje grę do stanu początkowego."""
         self.black_deck = CARDS['blackCards'][:]
         self.white_deck = CARDS['whiteCards'][:]
         random.shuffle(self.black_deck)
@@ -48,9 +48,9 @@ class Game:
         self.table_cards = []
         self.czar_sid = None
         self.state = 'LOBBY'
+        self.stop_timer()
 
     def deal_cards(self, sid, count=1):
-        """Rozdaje określoną liczbę kart graczowi."""
         hand = self.players[sid]['hand']
         for _ in range(count):
             if self.white_deck:
@@ -58,7 +58,6 @@ class Game:
                 hand.append(card)
 
     def start_round(self):
-        """Rozpoczyna nową rundę."""
         if not self.black_deck:
             self.broadcast_message("Koniec kart! Gra skończona.")
             self.state = 'LOBBY'
@@ -66,10 +65,15 @@ class Game:
             return
 
         self.current_black_card = self.black_deck.pop()
+        # Ensure 'pick' exists, default to 1
+        if isinstance(self.current_black_card, str):
+             # Legacy format support just in case
+             self.current_black_card = {'text': self.current_black_card, 'pick': 1}
+
         self.table_cards = []
         self.state = 'SELECTION'
 
-        # Wybór Cara (rotacja)
+        # Czar rotation
         sids = list(self.players.keys())
         if not self.czar_sid or self.czar_sid not in sids:
             self.czar_sid = sids[0]
@@ -79,16 +83,35 @@ class Game:
 
         for sid in self.players:
             self.players[sid]['is_czar'] = (sid == self.czar_sid)
-            # Uzupełnij rękę do 5 kart
-            needed = 5 - len(self.players[sid]['hand'])
+            needed = 10 - len(self.players[sid]['hand']) # Increase hand size for Pick 2 fun
             if needed > 0:
                 self.deal_cards(sid, needed)
 
         self.broadcast_state()
+        self.start_timer(60)
+
+    def start_timer(self, duration):
+        self.stop_timer()
+        self.timer = duration
+        self.timer_thread = socketio.start_background_task(self.timer_loop)
+
+    def stop_timer(self):
+        self.timer = 0
+        # Thread will exit naturally when timer <= 0
+
+    def timer_loop(self):
+        while self.timer > 0 and self.state == 'SELECTION':
+            socketio.sleep(1)
+            self.timer -= 1
+            socketio.emit('timer_update', {'time': self.timer})
+
+        if self.timer == 0 and self.state == 'SELECTION':
+            # Time's up! Force state change?
+            # Ideally auto-play random cards for slow players,
+            # but for now we just nudge or let it hang (simple version).
+            socketio.emit('message', {'text': 'Czas minął!'})
 
     def broadcast_state(self):
-        """Wysyła aktualny stan gry do wszystkich graczy."""
-        # Dane publiczne
         public_players = []
         for sid, p in self.players.items():
             public_players.append({
@@ -98,19 +121,14 @@ class Game:
                 'has_played': any(c['sid'] == sid for c in self.table_cards)
             })
 
-        # Karty na stole (ukryte jeśli trwa wybieranie)
         visible_table = []
-        for card in self.table_cards:
+        for entry in self.table_cards:
             if self.state == 'SELECTION':
-                 # W fazie wyboru nie pokazujemy treści kart
-                visible_table.append({'sid': card['sid'], 'card': 'REWERS', 'revealed': False})
+                visible_table.append({'sid': entry['sid'], 'cards': ['REWERS'] * len(entry['cards']), 'revealed': False})
             else:
-                visible_table.append({'sid': card['sid'], 'card': card['card'], 'revealed': True})
+                visible_table.append({'sid': entry['sid'], 'cards': entry['cards'], 'revealed': True})
 
-        # Tasowanie kart na stole w fazie oceniania, żeby Car nie wiedział kto co rzucił
-        if self.state == 'JUDGING':
-             # Tutaj po stronie klienta można to wyświetlić
-             pass
+        # Shuffle table for judging if needed (done at state transition)
 
         state_data = {
             'state': self.state,
@@ -122,7 +140,6 @@ class Game:
 
         socketio.emit('game_update', state_data)
 
-        # Wyślij prywatne ręce
         for sid in self.players:
             socketio.emit('hand_update', {'hand': self.players[sid]['hand']}, room=sid)
 
@@ -137,7 +154,6 @@ def index():
 
 @socketio.on('join_game')
 def on_join(data):
-    """Obsługa dołączania gracza."""
     nickname = data.get('nickname')
     password = data.get('password')
 
@@ -149,7 +165,6 @@ def on_join(data):
         emit('join_error', {'message': 'Podaj nick!'})
         return
 
-    # Dodaj gracza
     game.players[request.sid] = {
         'nickname': nickname,
         'score': 0,
@@ -164,61 +179,76 @@ def on_join(data):
 
 @socketio.on('start_game')
 def on_start():
-    """Rozpoczęcie gry."""
     if len(game.players) < 3:
-        # Wymagane min 3 osoby dla sensownej gry
-        game.broadcast_message("Potrzeba minimum 3 graczy, aby rozpocząć.")
-        # Dla testów pozwalamy na 2, ale ostrzegamy
-        # return
-        pass
+        game.broadcast_message("Potrzeba minimum 3 graczy.")
+        # pass # Allow for testing
 
     game.reset_game()
     game.start_round()
     game.broadcast_message("Gra rozpoczęta!")
 
-@socketio.on('play_card')
-def on_play_card(data):
-    """Gracz zagrywa białą kartę."""
+@socketio.on('play_cards')
+def on_play_cards(data):
+    """
+    Gracz zagrywa karty (lista).
+    data['cards'] = ['Tekst1', 'Tekst2']
+    """
     sid = request.sid
     if game.state != 'SELECTION':
         return
     if game.players[sid]['is_czar']:
-        return # Car nie gra kart
+        return
     if any(c['sid'] == sid for c in game.table_cards):
-        return # Gracz już zagrał
+        return
 
-    card_text = data.get('card')
-    if card_text in game.players[sid]['hand']:
-        game.players[sid]['hand'].remove(card_text)
-        game.table_cards.append({
-            'sid': sid,
-            'card': card_text,
-            'nickname': game.players[sid]['nickname']
-        })
+    cards = data.get('cards', [])
+    pick_needed = game.current_black_card.get('pick', 1)
 
-        # Sprawdź czy wszyscy (poza Carem) zagrali
-        not_czars_count = len(game.players) - 1
-        if len(game.table_cards) >= not_czars_count:
-            game.state = 'JUDGING'
-            # Tasujemy karty na stole przed odkryciem
-            random.shuffle(game.table_cards)
+    if len(cards) != pick_needed:
+        emit('error', {'message': f'Musisz wybrać {pick_needed} kart!'})
+        return
 
+    # Verify cards are in hand
+    hand = game.players[sid]['hand']
+    for c in cards:
+        if c not in hand:
+            return # Cheating?
+
+    # Remove from hand
+    for c in cards:
+        hand.remove(c)
+
+    game.table_cards.append({
+        'sid': sid,
+        'cards': cards,
+        'nickname': game.players[sid]['nickname']
+    })
+
+    game.broadcast_state()
+
+    # Check if all players played
+    not_czars_count = len(game.players) - 1
+    if len(game.table_cards) >= not_czars_count:
+        game.state = 'JUDGING'
+        game.stop_timer()
+        random.shuffle(game.table_cards)
         game.broadcast_state()
 
 @socketio.on('select_winner')
 def on_select_winner(data):
-    """Car wybiera zwycięską kartę."""
     sid = request.sid
     if game.state != 'JUDGING':
         return
     if not game.players[sid]['is_czar']:
         return
 
-    winner_card_text = data.get('card')
-    # Znajdź właściciela karty
+    # data['cards'] should match the winning entry's cards
+    winner_cards = data.get('cards')
+
     winner_sid = None
     for entry in game.table_cards:
-        if entry['card'] == winner_card_text:
+        # Compare lists (order matters usually, but exact match needed)
+        if entry['cards'] == winner_cards:
             winner_sid = entry['sid']
             break
 
@@ -227,15 +257,12 @@ def on_select_winner(data):
         winner_nick = game.players[winner_sid]['nickname']
         game.broadcast_message(f"{winner_nick} wygrywa rundę!")
 
-        # Sprawdź warunek końca gry (np. 5 punktów)
         if game.players[winner_sid]['score'] >= 5:
-            game.broadcast_message(f"Gracz {winner_nick} wygrał całą grę!")
+            game.broadcast_message(f"Gracz {winner_nick} wygrał grę!")
             socketio.emit('game_over', {'winner': winner_nick})
-            game.state = 'LOBBY' # Nie resetujemy od razu, czekamy na restart
+            game.state = 'LOBBY'
             return
 
-        # Opóźnienie przed kolejną rundą (obsłużone timeoutem po stronie klienta lub serwera)
-        # Tu od razu nowa runda dla uproszczenia, w JS można dać timeout
         socketio.sleep(3)
         game.start_round()
 
@@ -246,13 +273,11 @@ def on_disconnect():
         nick = game.players[sid]['nickname']
         del game.players[sid]
         game.broadcast_message(f"Gracz {nick} wyszedł.")
-        # Reset gry jeśli zbyt mało graczy?
         if len(game.players) < 2:
             game.state = 'LOBBY'
+            game.stop_timer()
         elif game.czar_sid == sid:
-            # Jeśli Car wyszedł, reset rundy
             game.start_round()
-
         game.broadcast_state()
 
 if __name__ == '__main__':

@@ -18,7 +18,7 @@
 
 body {
     font-family: var(--font-main);
-    background: radial-gradient(circle at center, #ffffff 0%, #f0f0f0 100%);
+    background: #111;
     color: var(--text-dark);
     height: 100vh;
     overflow: hidden;
@@ -26,423 +26,257 @@ body {
     flex-direction: column;
 }
 
-.hidden {
-    display: none !important;
+#bg-animation {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: -1;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    opacity: 0.8;
 }
 
-/* Modal Styling (Login / Game Over) */
+.hidden { display: none !important; }
+
+/* --- MODAL --- */
 .modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.9);
-    color: var(--text-light);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 2000;
     backdrop-filter: blur(5px);
 }
-
 .modal-content {
-    background: var(--card-white);
-    color: var(--text-dark);
+    background: #fff;
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    animation: slideUp 0.4s ease-out;
+}
+@keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.modal-btn {
+    padding: 12px 24px;
+    background: var(--card-black);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+/* --- LOGIN --- */
+#login-screen {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #111;
+    display: flex; justify-content: center; align-items: center;
+    z-index: 1000;
+    color: #fff;
+}
+.login-container {
+    background: #fff;
+    color: #000;
     padding: 3rem;
     border-radius: 20px;
     text-align: center;
-    width: 90%;
-    max-width: 450px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-    transform: translateY(20px);
-    opacity: 0;
-    animation: modalSlideIn 0.5s forwards ease-out;
+    width: 350px;
+}
+.login-container input {
+    width: 100%; padding: 10px; margin: 10px 0;
+    border: 2px solid #ccc; border-radius: 5px;
+}
+.login-container button {
+    width: 100%; padding: 12px;
+    background: #000; color: #fff; border: none; border-radius: 5px;
+    font-weight: bold; cursor: pointer;
 }
 
-@keyframes modalSlideIn {
-    to { transform: translateY(0); opacity: 1; }
-}
-
-.modal-content h1 {
-    margin-bottom: 2rem;
-    font-weight: 700;
-    font-size: 2rem;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-}
-
-.modal-content input {
-    width: 100%;
-    padding: 15px;
-    margin-bottom: 15px;
-    border: 2px solid #ddd;
-    border-radius: 12px;
-    font-family: var(--font-main);
-    font-size: 1.1rem;
-    transition: border-color 0.3s;
-}
-
-.modal-content input:focus {
-    border-color: var(--card-black);
-    outline: none;
-}
-
-.modal-btn {
-    width: 100%;
-    padding: 15px;
-    background: var(--card-black);
-    color: var(--text-light);
-    border: none;
-    border-radius: 12px;
-    font-size: 1.2rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.modal-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-
-.modal-btn:active {
-    transform: scale(0.98);
-}
-
-.error-msg {
-    color: #e74c3c;
-    margin-top: 1rem;
-    font-weight: bold;
-}
-
-/* Game Area */
+/* --- GAME UI --- */
 #game-area {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    width: 100%;
-    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    display: flex; flex-direction: column; height: 100%;
 }
 
 .game-header {
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(10px);
+    background: rgba(255,255,255,0.9);
     padding: 1rem 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 2px 20px rgba(0,0,0,0.05);
-    z-index: 100;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
-.status-panel h2 {
-    font-size: 1.4rem;
-    font-weight: 700;
-}
+.status-panel h2 { font-size: 1.2rem; margin-bottom: 5px; }
 
-#czar-display {
-    font-size: 1rem;
-    color: #666;
-    margin-top: 5px;
+#timer-display {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: var(--text-dark);
 }
 
 #start-btn {
-    padding: 12px 25px;
+    padding: 10px 20px;
     background: var(--card-black);
-    color: var(--text-light);
-    border: none;
-    border-radius: 30px;
-    cursor: pointer;
-    font-weight: 700;
-    transition: all 0.2s;
-}
-
-#start-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    color: #fff;
+    border: none; border-radius: 20px;
+    font-weight: bold; cursor: pointer;
 }
 
 .game-main {
-    flex: 1;
-    display: flex;
-    padding: 2rem;
-    gap: 3rem;
-    overflow: hidden;
-    position: relative;
+    flex: 1; display: flex; padding: 2rem; gap: 2rem; overflow: hidden;
 }
 
-/* Table Area */
 #table-area {
     flex: 3;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3rem;
+    display: flex; flex-direction: column; align-items: center; gap: 2rem;
     overflow-y: auto;
-    perspective: 1000px; /* For 3D transforms */
 }
 
 #black-card-container {
-    min-height: 280px;
-    display: flex;
-    justify-content: center;
+    perspective: 1000px;
     z-index: 10;
 }
 
 #played-cards-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 1.5rem;
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem;
     width: 100%;
-    padding-bottom: 2rem;
+    padding-bottom: 50px;
 }
 
-/* Sidebar / Scoreboard */
+.card-group {
+    display: flex; flex-direction: column; align-items: center;
+    transition: transform 0.2s;
+}
+.card-group:hover { transform: scale(1.05); z-index: 50; }
+
+/* --- SIDEBAR --- */
 #sidebar {
-    flex: 1;
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(10px);
-    padding: 2rem;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-    max-width: 350px;
-    display: flex;
-    flex-direction: column;
-    border: 1px solid rgba(255,255,255,0.5);
+    flex: 1; max-width: 300px;
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(5px);
+    padding: 1rem; border-radius: 15px;
+    display: flex; flex-direction: column;
 }
 
 #players-list {
-    list-style: none;
-    margin-top: 1.5rem;
-    overflow-y: auto;
-    flex: 1;
+    list-style: none; margin-top: 1rem; flex: 1; overflow-y: auto;
 }
 
 #players-list li {
-    padding: 1rem;
-    margin-bottom: 0.5rem;
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: transform 0.2s;
+    display: flex; align-items: center;
+    padding: 10px; margin-bottom: 8px;
+    background: #fff; border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
-#players-list li:hover {
-    transform: translateX(5px);
+.player-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: #ccc;
+    display: flex; justify-content: center; align-items: center;
+    font-weight: bold; margin-right: 10px;
 }
 
+.player-details { flex: 1; }
+.p-nick { font-weight: bold; font-size: 0.9rem; }
+.p-score { font-size: 0.8rem; color: #666; }
+
+.is-czar { border: 2px solid #000; }
 .czar-badge {
-    background: var(--card-black);
-    color: var(--text-light);
-    padding: 3px 8px;
-    border-radius: 20px;
-    font-size: 0.65rem;
-    text-transform: uppercase;
-    font-weight: 700;
-    margin-left: 8px;
-    letter-spacing: 0.5px;
+    background: #000; color: #fff; font-size: 0.6rem; padding: 2px 5px; border-radius: 4px;
 }
 
-/* Cards */
+/* --- CARDS --- */
 .card {
-    width: 180px;
-    height: 250px;
-    padding: 1.5rem;
-    border-radius: 18px;
-    font-weight: 700;
-    font-size: 1.1rem;
-    line-height: 1.4;
+    width: 160px; height: 220px;
+    padding: 1.2rem;
+    background: #fff;
+    border-radius: 12px;
     box-shadow: var(--shadow-soft);
-    display: flex;
-    flex-direction: column;
-    user-select: none;
+    font-weight: bold; font-size: 0.9rem;
     position: relative;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    transform-style: preserve-3d; /* For flip */
-    background-image: url("data:image/svg+xml,%3Csvg width='4' height='4' viewBox='0 0 4 4' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 3h1v1H1V3zm2-2h1v1H3V1z' fill='%23000000' fill-opacity='0.02' fill-rule='evenodd'/%3E%3C/svg%3E");
+    user-select: none;
 }
 
 .black-card {
-    background-color: var(--card-black);
-    color: var(--text-light);
-    width: 220px;
-    height: 300px;
-    font-size: 1.3rem;
-    box-shadow: var(--shadow-hard);
+    width: 200px; height: 280px;
+    background: var(--card-black); color: #fff;
+    font-size: 1.1rem;
     border: 1px solid #333;
 }
 
-.white-card {
-    background-color: var(--card-white);
-    color: var(--text-dark);
-    border: 1px solid rgba(0,0,0,0.1);
-    cursor: pointer;
+.pick-badge {
+    position: absolute; bottom: 10px; right: 10px;
+    background: #fff; color: #000;
+    padding: 2px 8px; border-radius: 10px;
+    font-size: 0.7rem; font-weight: 900;
 }
 
-.white-card:hover {
-    z-index: 100;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-    /* Transform handled by JS Tilt now, or CSS backup */
+.hidden-card {
+    background: #111; color: #fff;
+    display: flex; justify-content: center; align-items: center;
+}
+.hidden-card::after { content: "CAH"; font-size: 1.5rem; font-weight: 900; transform: rotate(-45deg); opacity: 0.2; }
+
+.white-card { cursor: pointer; border: 1px solid #eee; transition: transform 0.2s; }
+.white-card:hover { transform: translateY(-10px); z-index: 100; }
+
+.card.selected {
+    border: 3px solid #3498db;
+    transform: translateY(-20px);
 }
 
-/* Watermark logo on cards */
-.card::after {
-    content: "CAH";
-    position: absolute;
-    bottom: 15px;
-    right: 15px;
-    font-size: 0.8rem;
-    font-weight: 900;
-    opacity: 0.3;
-}
-.black-card::after { color: #fff; }
-.white-card::after { color: #000; }
-
-.card.hidden-card {
-    background: var(--card-black); /* Back of card style */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border: 2px solid #fff;
+.card.selected::before {
+    content: attr(data-order);
+    position: absolute; top: -10px; right: -10px;
+    width: 30px; height: 30px;
+    background: #3498db; color: #fff;
+    border-radius: 50%;
+    display: flex; justify-content: center; align-items: center;
+    font-weight: bold; z-index: 10;
 }
 
-.card.hidden-card::before {
-    content: "CAH";
-    font-size: 2.5rem;
-    font-weight: 900;
-    color: #fff;
-    transform: rotate(-45deg);
-}
-.card.hidden-card::after { content: none; }
-
-.card.winner {
-    border: 5px solid #2ecc71;
-    box-shadow: 0 0 40px rgba(46, 204, 113, 0.6);
-    transform: scale(1.1) !important;
-    z-index: 200;
-}
-
-/* Hand Section */
+/* --- HAND --- */
 #hand-section {
-    background: rgba(255,255,255,0.5);
+    height: 280px;
+    background: rgba(255,255,255,0.6);
     backdrop-filter: blur(10px);
-    padding: 1.5rem;
-    height: 290px;
-    box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
     border-top: 1px solid rgba(255,255,255,0.5);
-    z-index: 50;
+    display: flex; flex-direction: column;
 }
+
+#selection-controls {
+    text-align: center; padding: 10px;
+}
+#selection-controls button {
+    padding: 8px 20px;
+    background: #27ae60; color: #fff;
+    border: none; border-radius: 20px;
+    font-weight: bold; cursor: pointer;
+    font-size: 1rem;
+}
+#selection-controls button:disabled { background: #ccc; cursor: not-allowed; }
 
 #hand-container {
-    display: flex;
-    justify-content: center;
-    gap: -20px; /* Negative margin for fanned look */
-    height: 100%;
-    align-items: center;
-    overflow-x: visible; /* Allow hover to pop out */
-    padding: 20px 40px;
+    flex: 1;
+    display: flex; justify-content: center; align-items: center;
+    gap: -10px;
+    padding: 0 40px;
 }
 
-/* When hovering a card in hand, push others aside slightly (optional, complex in pure CSS) */
-/* Simplified hand hover */
-#hand-container .card {
-    margin-right: -10px;
-    transition: transform 0.3s, margin 0.3s;
-}
-#hand-container .card:hover {
-    margin-right: 20px;
-    margin-left: 20px;
-    transform: translateY(-30px) scale(1.1) rotate(0deg) !important;
-    z-index: 1000;
-}
-
-/* Toast */
-#toast-container {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    pointer-events: none;
-    z-index: 2000;
-}
-
+/* --- TOAST --- */
 .toast {
-    background: rgba(0,0,0,0.85);
-    color: white;
-    padding: 15px 25px;
-    border-radius: 12px;
-    font-weight: 500;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    backdrop-filter: blur(5px);
-    animation: fadeIn 0.3s, fadeOut 0.3s 2.7s forwards;
+    background: #000; color: #fff; padding: 10px 20px; border-radius: 5px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 
-@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
-
-/* Mobile RWD */
+/* RWD */
 @media (max-width: 768px) {
-    .game-main {
-        flex-direction: column;
-        padding: 1rem;
-        gap: 1rem;
-    }
-
-    #sidebar {
-        max-width: 100%;
-        order: -1;
-        padding: 1rem;
-        max-height: 150px;
-    }
-
-    #players-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-
-    #players-list li {
-        width: auto;
-        padding: 0.5rem 1rem;
-    }
-
-    #black-card-container { min-height: 220px; }
-
-    .card {
-        width: 140px;
-        height: 200px;
-        font-size: 0.95rem;
-        padding: 1rem;
-    }
-
-    .black-card {
-        width: 160px;
-        height: 230px;
-    }
-
-    #hand-container {
-        justify-content: flex-start;
-        gap: 10px;
-        overflow-x: auto;
-        padding: 10px;
-    }
-
-    #hand-container .card {
-        margin-right: 0;
-        flex-shrink: 0;
-    }
-
-    #hand-container .card:hover {
-        margin: 0;
-        transform: translateY(-10px);
-    }
+    .game-main { flex-direction: column; padding: 10px; gap: 10px; }
+    #sidebar { max-width: 100%; max-height: 120px; }
+    #players-list { display: flex; gap: 10px; }
+    .card { width: 120px; height: 170px; font-size: 0.8rem; }
+    .black-card { width: 150px; height: 210px; }
+    #hand-container { justify-content: flex-start; overflow-x: auto; gap: 5px; padding: 10px; }
+    .card.selected { transform: translateY(-10px); }
 }

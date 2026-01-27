@@ -24,16 +24,19 @@ class TestGame(unittest.TestCase):
         self.game.players['sid1'] = {'nickname': 'P1', 'score': 0, 'hand': [], 'is_czar': False}
 
         # Ensure deck has cards
-        self.game.white_deck = ["Card1", "Card2", "Card3", "Card4", "Card5", "Card6"]
+        self.game.white_deck = [f"Card{i}" for i in range(20)]
 
         self.game.deal_cards('sid1', 5)
         self.assertEqual(len(self.game.players['sid1']['hand']), 5)
-        self.assertEqual(len(self.game.white_deck), 1)
+        self.assertEqual(len(self.game.white_deck), 15)
 
     def test_start_round(self):
         self.game.players['sid1'] = {'nickname': 'P1', 'score': 0, 'hand': [], 'is_czar': False}
         self.game.players['sid2'] = {'nickname': 'P2', 'score': 0, 'hand': [], 'is_czar': False}
         self.game.players['sid3'] = {'nickname': 'P3', 'score': 0, 'hand': [], 'is_czar': False}
+
+        # Ensure enough cards
+        self.game.white_deck = [f"Card{i}" for i in range(100)]
 
         self.game.start_round()
 
@@ -41,8 +44,11 @@ class TestGame(unittest.TestCase):
         self.assertIsNotNone(self.game.current_black_card)
         self.assertIsNotNone(self.game.czar_sid)
 
-        # Check if hands were replenished
-        self.assertEqual(len(self.game.players['sid1']['hand']), 5)
+        # Check if hands were replenished to 10
+        self.assertEqual(len(self.game.players['sid1']['hand']), 10)
+
+        # Verify timer started
+        app.socketio.start_background_task.assert_called()
 
 if __name__ == '__main__':
     unittest.main()

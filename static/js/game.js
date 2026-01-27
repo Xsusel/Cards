@@ -1,4 +1,3 @@
-// Połączenie z serwerem Socket.IO
 const socket = io();
 
 // Elementy DOM
@@ -17,19 +16,28 @@ const playedCardsContainer = document.getElementById('played-cards-container');
 const handContainer = document.getElementById('hand-container');
 const playersList = document.getElementById('players-list');
 const toastContainer = document.getElementById('toast-container');
+const timerDisplay = document.getElementById('timer-display');
 
-// Modal Game Over (dynamic creation or static HTML logic handled here)
+const selectionControls = document.getElementById('selection-controls');
+const selectedCountSpan = document.getElementById('selected-count');
+const requiredCountSpan = document.getElementById('required-count');
+const confirmPlayBtn = document.getElementById('confirm-play-btn');
+
 let gameOverModal = null;
 
-// Zmienne stanu lokalnego
+// Lokalny stan gry
 let myNickname = '';
 let isCzar = false;
 let currentHand = [];
 let gameState = 'LOBBY';
+let pickAmount = 1;
+let selectedCards = []; // Lista tekstów wybranych kart
 
-// --- OBSŁUGA LOGOWANIA ---
+// --- LOGOWANIE I INICJALIZACJA ---
 
+// Obsługa przycisku dołączania
 joinBtn.addEventListener('click', () => {
+    soundManager.playClick();
     const nickname = nicknameInput.value.trim();
     const password = passwordInput.value.trim();
 
@@ -42,12 +50,15 @@ joinBtn.addEventListener('click', () => {
     socket.emit('join_game', { nickname, password });
 });
 
+// Błąd logowania
 socket.on('join_error', (data) => {
     loginError.textContent = data.message;
+    soundManager.playTone(200, 'sawtooth', 0.2); // Dźwięk błędu
 });
 
+// Sukces logowania - animacja wejścia
 socket.on('join_success', () => {
-    // Animacja wyjścia ekranu logowania
+    soundManager.playTone(600, 'sine', 0.3);
     gsap.to('.login-container', { scale: 0.8, opacity: 0, duration: 0.3 });
     gsap.to(loginScreen, {
         opacity: 0,
@@ -56,39 +67,50 @@ socket.on('join_success', () => {
         onComplete: () => {
             loginScreen.classList.add('hidden');
             gameArea.classList.remove('hidden');
-            // Animacja wejścia obszaru gry
             gsap.from(gameArea, { opacity: 0, duration: 0.8 });
-            gsap.from('#sidebar', { x: -50, opacity: 0, duration: 0.5, delay: 0.3 });
-            gsap.from('.game-header', { y: -50, opacity: 0, duration: 0.5, delay: 0.5 });
-            gsap.from('#hand-section', { y: 100, opacity: 0, duration: 0.5, delay: 0.7 });
+            initBackgroundAnimation();
         }
     });
 });
 
-// --- OBSŁUGA GRY ---
+// --- PĘTLA GRY ---
 
+// Rozpoczęcie gry
 startBtn.addEventListener('click', () => {
+    soundManager.playClick();
     socket.emit('start_game');
 });
 
-// Otrzymanie wiadomości (powiadomienia)
+// Odbieranie wiadomości tekstowych
 socket.on('message', (data) => {
     showToast(data.text);
+    soundManager.playPop();
 });
 
-// Aktualizacja ręki gracza
+// Aktualizacja ręki z serwera
 socket.on('hand_update', (data) => {
     updateHand(data.hand);
 });
 
-// GAME OVER
+// Aktualizacja licznika czasu
+socket.on('timer_update', (data) => {
+    timerDisplay.textContent = data.time;
+    if (data.time <= 10) {
+        timerDisplay.style.color = 'red';
+        if (data.time > 0) soundManager.playTone(800, 'square', 0.05, 0.05); // Tykanie
+    } else {
+        timerDisplay.style.color = 'var(--text-dark)';
+    }
+});
+
+// Koniec gry
 socket.on('game_over', (data) => {
+    soundManager.playWin();
     showGameOver(data.winner);
 });
 
 // Główna aktualizacja stanu gry
 socket.on('game_update', (data) => {
-    // Jeśli był modal game over, a stan się zresetował, usuń modal
     if (gameOverModal && data.state === 'LOBBY') {
         document.body.removeChild(gameOverModal);
         gameOverModal = null;
@@ -96,329 +118,352 @@ socket.on('game_update', (data) => {
 
     gameState = data.state;
 
-    // 1. Aktualizacja statusu i UI Cara
+    // Logika ilości kart do wybrania (Pick 2)
+    if (data.current_black_card) {
+        pickAmount = data.current_black_card.pick || 1;
+    } else {
+        pickAmount = 1;
+    }
+
     updateStatusPanel(data);
-
-    // 2. Aktualizacja listy graczy
     updatePlayerList(data.players);
-
-    // 3. Aktualizacja czarnej karty
     updateBlackCard(data.current_black_card);
-
-    // 4. Aktualizacja kart na stole
     updateTableCards(data.table_cards);
 
-    // Przycisk Start (tylko w lobby)
+    // Widoczność kontrolek
     if (gameState === 'LOBBY') {
         startBtn.classList.remove('hidden');
-        gsap.to(startBtn, { autoAlpha: 1 });
+        timerDisplay.classList.add('hidden');
+        selectionControls.classList.add('hidden');
     } else {
-        gsap.to(startBtn, { autoAlpha: 0, onComplete: () => startBtn.classList.add('hidden') });
+        startBtn.classList.add('hidden');
+        timerDisplay.classList.remove('hidden');
+
+        if (gameState === 'SELECTION' && !isCzar) {
+            selectionControls.classList.remove('hidden');
+            requiredCountSpan.textContent = pickAmount;
+            updateSelectionUI();
+        } else {
+            selectionControls.classList.add('hidden');
+        }
     }
 });
 
-// --- FUNKCJE UI I ANIMACJE ---
+// Zatwierdzenie wyboru kart
+confirmPlayBtn.addEventListener('click', () => {
+    if (selectedCards.length !== pickAmount) return;
+    soundManager.playClick();
+    socket.emit('play_cards', { cards: selectedCards });
 
+    // Lokalna animacja usunięcia
+    selectedCards.forEach(cardText => {
+        const els = Array.from(handContainer.children);
+        const el = els.find(e => e.textContent === cardText);
+        if (el) {
+             gsap.to(el, { y: -200, opacity: 0, duration: 0.5 });
+        }
+    });
+
+    selectedCards = [];
+    updateSelectionUI();
+});
+
+
+// --- FUNKCJE UI ---
+
+// Wyświetlanie powiadomień (Toast)
 function showToast(msg) {
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.textContent = msg;
     toastContainer.appendChild(toast);
-
-    setTimeout(() => {
-        if (toast.parentNode) toast.parentNode.removeChild(toast);
-    }, 3500);
+    setTimeout(() => toast && toast.remove(), 3500);
 }
 
+// Aktualizacja panelu statusu
 function updateStatusPanel(data) {
-    const czarNick = data.czar_nickname;
-    czarName.textContent = czarNick || '-';
-
+    czarName.textContent = data.czar_nickname || '-';
     const me = data.players.find(p => p.nickname === myNickname);
-    if (me) {
-        isCzar = me.is_czar;
-    }
+    if (me) isCzar = me.is_czar;
 
     let statusText = '';
-    if (data.state === 'LOBBY') {
-        statusText = 'Oczekiwanie na rozpoczęcie...';
-    } else if (data.state === 'SELECTION') {
-        if (isCzar) {
-            statusText = 'Jesteś Carem! Czekaj na wybory graczy.';
-        } else {
-            statusText = 'Wybierz najśmieszniejszą kartę!';
-        }
-    } else if (data.state === 'JUDGING') {
-        if (isCzar) {
-            statusText = 'Wybierz zwycięzcę!';
-        } else {
-            statusText = 'Car wybiera zwycięzcę...';
-        }
-    }
+    if (data.state === 'LOBBY') statusText = 'Oczekiwanie...';
+    else if (data.state === 'SELECTION') statusText = isCzar ? 'Jesteś Carem. Czekaj.' : `Wybierz ${pickAmount} kart(y)!`;
+    else if (data.state === 'JUDGING') statusText = isCzar ? 'Wybierz zwycięzcę!' : 'Car wybiera...';
+
     gameStatus.textContent = statusText;
 }
 
+// Generowanie koloru avatara na podstawie nicku
+function generateAvatar(seed) {
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+        hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = Math.abs(hash % 360);
+    return `hsl(${hue}, 70%, 80%)`;
+}
+
+// Aktualizacja listy graczy
 function updatePlayerList(players) {
     playersList.innerHTML = '';
-    // Sortuj tak, żeby 'ja' byłem na górze, albo po wyniku
     players.sort((a,b) => b.score - a.score);
 
-    players.forEach((p, index) => {
+    players.forEach(p => {
         const li = document.createElement('li');
 
-        const nameSpan = document.createElement('span');
-        nameSpan.textContent = p.nickname;
-        if (p.nickname === myNickname) nameSpan.style.fontWeight = 'bold';
+        // Avatar
+        const avatar = document.createElement('div');
+        avatar.className = 'player-avatar';
+        avatar.style.backgroundColor = generateAvatar(p.nickname);
+        avatar.textContent = p.nickname.charAt(0).toUpperCase();
 
-        const infoDiv = document.createElement('div');
+        const details = document.createElement('div');
+        details.className = 'player-details';
+        details.innerHTML = `
+            <div class="p-nick">${p.nickname} ${p.nickname === myNickname ? '(Ty)' : ''}</div>
+            <div class="p-score">${p.score} pkt</div>
+        `;
+
+        li.appendChild(avatar);
+        li.appendChild(details);
 
         if (p.is_czar) {
+            li.classList.add('is-czar');
             const badge = document.createElement('span');
             badge.className = 'czar-badge';
             badge.textContent = 'CAR';
-            infoDiv.appendChild(badge);
+            li.appendChild(badge);
         }
 
-        const scoreSpan = document.createElement('span');
-        scoreSpan.style.marginLeft = '10px';
-        scoreSpan.style.fontWeight = '700';
-        scoreSpan.textContent = `${p.score}`;
-
-        infoDiv.appendChild(scoreSpan);
-        li.appendChild(nameSpan);
-        li.appendChild(infoDiv);
-
         if (gameState === 'SELECTION' && !p.is_czar && p.has_played) {
-            li.style.borderLeft = '5px solid #2ecc71';
+            const check = document.createElement('span');
+            check.textContent = '✔';
+            check.style.color = 'green';
+            check.style.fontWeight = 'bold';
+            check.style.marginLeft = 'auto';
+            li.appendChild(check);
         }
 
         playersList.appendChild(li);
-
-        // Animacja listy tylko przy zmianie liczby elementów (uproszczone)
-        // gsap.from(li, { x: -20, opacity: 0, delay: index * 0.1 });
     });
 }
 
-// Globalny stan czarnej karty, żeby nie animować przy każdym ticku
-let lastBlackCard = '';
+// Aktualizacja czarnej karty (z obsługą animacji)
+let lastBlackCardText = '';
+function updateBlackCard(cardData) {
+    if (!cardData) {
+        blackCardContainer.innerHTML = '';
+        lastBlackCardText = '';
+        return;
+    }
 
-function updateBlackCard(cardText) {
-    if (cardText === lastBlackCard) return;
-    lastBlackCard = cardText;
+    if (cardData.text === lastBlackCardText) return;
+    lastBlackCardText = cardData.text;
 
     blackCardContainer.innerHTML = '';
-    if (!cardText) return;
-
     const card = document.createElement('div');
     card.className = 'card black-card';
-    card.innerHTML = cardText.replace(/_____/g, '__________');
+    card.innerHTML = cardData.text.replace(/_____/g, '__________');
+
+    if (cardData.pick > 1) {
+        const pickBadge = document.createElement('div');
+        pickBadge.className = 'pick-badge';
+        pickBadge.textContent = `WYBIERZ ${cardData.pick}`;
+        card.appendChild(pickBadge);
+    }
+
     addTiltEffect(card);
-
     blackCardContainer.appendChild(card);
+    soundManager.playDeal();
 
-    // Animacja wejścia 3D
-    gsap.fromTo(card,
-        { rotateY: 90, opacity: 0 },
-        { rotateY: 0, opacity: 1, duration: 0.8, ease: "back.out(1.2)" }
-    );
+    gsap.fromTo(card, { rotateY: 90, opacity: 0 }, { rotateY: 0, opacity: 1, duration: 0.8, ease: "back.out(1.2)" });
 }
 
-function updateTableCards(cards) {
+// Aktualizacja kart na stole
+function updateTableCards(tableCards) {
     playedCardsContainer.innerHTML = '';
 
-    cards.forEach((entry, index) => {
-        const cardDiv = document.createElement('div');
+    tableCards.forEach((entry, index) => {
+        // Grupowanie kart dla trybu Pick 2
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'card-group';
 
-        if (!entry.revealed) {
-            cardDiv.className = 'card hidden-card';
-        } else {
-            cardDiv.className = 'card white-card';
-            cardDiv.textContent = entry.card;
-            addTiltEffect(cardDiv); // 3D tilt
-
-            if (gameState === 'JUDGING' && isCzar) {
-                cardDiv.onclick = () => selectWinner(entry.card);
-                cardDiv.style.cursor = 'pointer';
-                cardDiv.title = "Wybierz zwycięzcę";
-
-                // Pulsowanie dla Cara
-                gsap.to(cardDiv, { scale: 1.02, duration: 0.8, yoyo: true, repeat: -1 });
+        entry.cards.forEach((cardText, cIndex) => {
+            const cardDiv = document.createElement('div');
+            if (!entry.revealed) {
+                cardDiv.className = 'card hidden-card';
+            } else {
+                cardDiv.className = 'card white-card';
+                cardDiv.textContent = cardText;
+                addTiltEffect(cardDiv);
             }
+
+            // Efekt stosu dla grup
+            if (cIndex > 0) {
+                cardDiv.style.marginTop = '-150px'; // Nałożenie
+                cardDiv.style.transform = `rotate(${Math.random() * 10 - 5}deg)`;
+            }
+
+            groupDiv.appendChild(cardDiv);
+        });
+
+        if (gameState === 'JUDGING' && isCzar) {
+            groupDiv.style.cursor = 'pointer';
+            groupDiv.onclick = () => selectWinner(entry.cards);
+            groupDiv.title = "Wybierz ten zestaw";
         }
 
-        playedCardsContainer.appendChild(cardDiv);
+        playedCardsContainer.appendChild(groupDiv);
 
-        // Animacje
         if (gameState === 'JUDGING' && entry.revealed) {
-             gsap.from(cardDiv, { rotationY: 180, duration: 0.6, delay: index * 0.15, ease: "power2.out" });
-        } else {
-             // Wlatywanie na stół
-             gsap.from(cardDiv, { y: 200, opacity: 0, scale: 0.5, duration: 0.5, ease: "back.out(1)" });
+            gsap.from(groupDiv.children, {
+                rotationY: 180,
+                duration: 0.6,
+                stagger: 0.1,
+                delay: index * 0.2
+            });
         }
     });
 }
 
+// Aktualizacja ręki gracza
 function updateHand(hand) {
-    // Only update if changes detected (simple check)
-    // To keep it smooth, we usually redraw. GSAP handles from() gracefully.
-
-    if (JSON.stringify(hand) === JSON.stringify(currentHand)) return;
-    currentHand = hand;
     handContainer.innerHTML = '';
 
     hand.forEach((cardText, index) => {
         const card = document.createElement('div');
         card.className = 'card white-card';
         card.textContent = cardText;
+
+        if (selectedCards.includes(cardText)) {
+            card.classList.add('selected');
+            const num = selectedCards.indexOf(cardText) + 1;
+            card.setAttribute('data-order', num);
+        }
+
+        card.addEventListener('click', () => toggleCardSelection(cardText, card));
+        card.addEventListener('mouseenter', () => soundManager.playHover());
+
         addTiltEffect(card);
-
-        // Kliknięcie
-        card.addEventListener('click', () => {
-            playCard(cardText, card);
-        });
-
         handContainer.appendChild(card);
-
-        // Staggered deal animation
-        gsap.from(card, {
-            y: 300,
-            rotation: Math.random() * 20 - 10,
-            opacity: 0,
-            duration: 0.6,
-            delay: index * 0.1,
-            ease: "power3.out"
-        });
     });
 }
 
-function playCard(cardText, cardElement) {
-    if (gameState !== 'SELECTION') return;
-    if (isCzar) {
-        showToast("Jesteś Carem! Nie możesz grać kart.");
-        return;
+// Przełączanie zaznaczenia karty
+function toggleCardSelection(cardText, element) {
+    if (gameState !== 'SELECTION' || isCzar) return;
+
+    if (selectedCards.includes(cardText)) {
+        // Odznaczenie
+        selectedCards = selectedCards.filter(c => c !== cardText);
+        element.classList.remove('selected');
+        element.removeAttribute('data-order');
+        soundManager.playClick();
+    } else {
+        // Zaznaczenie
+        if (selectedCards.length < pickAmount) {
+            selectedCards.push(cardText);
+            element.classList.add('selected');
+            soundManager.playClick();
+        } else {
+            // Wibracja jeśli limit osiągnięty
+            gsap.to(element, { x: 5, duration: 0.1, yoyo: true, repeat: 3 });
+        }
     }
 
-    // Animacja lotu na środek
-    const tableRect = playedCardsContainer.getBoundingClientRect();
-    const cardRect = cardElement.getBoundingClientRect();
+    updateSelectionBadges();
+    updateSelectionUI();
+}
 
-    // Oblicz środek kontenera stołu
-    const targetX = tableRect.left + tableRect.width / 2 - cardRect.width / 2;
-    const targetY = tableRect.top + tableRect.height / 2 - cardRect.height / 2;
-
-    const deltaX = targetX - cardRect.left;
-    const deltaY = targetY - cardRect.top;
-
-    // Klonujemy kartę, żeby oryginał został w strukturze do momentu usunięcia
-    // Ale tutaj prościej: animujemy oryginał
-    cardElement.style.zIndex = 1000;
-
-    gsap.to(cardElement, {
-        x: deltaX,
-        y: deltaY,
-        rotation: 0,
-        scale: 0.8,
-        opacity: 0,
-        duration: 0.6,
-        ease: "power2.in",
-        onComplete: () => {
-            socket.emit('play_card', { card: cardText });
-            // Lokalne usunięcie dla płynności (backend i tak nadpisze przy update)
-            cardElement.style.visibility = 'hidden';
+// Aktualizacja numerków kolejności wyboru
+function updateSelectionBadges() {
+    const cards = handContainer.querySelectorAll('.card');
+    cards.forEach(c => {
+        const text = c.textContent;
+        const idx = selectedCards.indexOf(text);
+        if (idx > -1) {
+            c.setAttribute('data-order', idx + 1);
+        } else {
+            c.removeAttribute('data-order');
         }
     });
 }
 
-function selectWinner(cardText) {
-    if (confirm(`Potwierdź wybór: "${cardText}"`)) {
-        socket.emit('select_winner', { card: cardText });
+// Aktualizacja UI kontrolek wyboru
+function updateSelectionUI() {
+    selectedCountSpan.textContent = selectedCards.length;
+    confirmPlayBtn.disabled = (selectedCards.length !== pickAmount);
+
+    if (!confirmPlayBtn.disabled) {
+        gsap.to(confirmPlayBtn, { scale: 1.1, duration: 0.3, yoyo: true, repeat: 1 });
+    }
+}
+
+// Wybór zwycięzcy przez Cara
+function selectWinner(cards) {
+    if (confirm("Potwierdzasz ten wybór?")) {
+        soundManager.playClick();
+        socket.emit('select_winner', { cards: cards });
         fireConfetti();
     }
 }
 
-// --- 3D TILT EFFECT ---
+// --- EFEKTY WIZUALNE ---
+
+// Efekt 3D Tilt (pochylenie karty)
 function addTiltEffect(element) {
     element.addEventListener('mousemove', (e) => {
         const rect = element.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
+        const rotateX = ((y - rect.height/2) / (rect.height/2)) * -10;
+        const rotateY = ((x - rect.width/2) / (rect.width/2)) * 10;
 
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-
-        const rotateX = ((y - centerY) / centerY) * -10; // Max 10 deg
-        const rotateY = ((x - centerX) / centerX) * 10;
-
-        gsap.to(element, {
-            rotationX: rotateX,
-            rotationY: rotateY,
-            scale: 1.05,
-            duration: 0.2,
-            ease: "power1.out"
-        });
+        gsap.to(element, { rotationX: rotateX, rotationY: rotateY, scale: 1.05, duration: 0.2 });
     });
-
     element.addEventListener('mouseleave', () => {
-        gsap.to(element, {
-            rotationX: 0,
-            rotationY: 0,
-            scale: 1,
-            duration: 0.5,
-            ease: "elastic.out(1, 0.5)"
-        });
+        gsap.to(element, { rotationX: 0, rotationY: 0, scale: 1, duration: 0.5 });
     });
 }
 
-// --- CONFETTI ---
+// Efekt Konfetti
 function fireConfetti() {
-    // Proste confetti w CSS/JS bez zewn biblioteki (chyba że dodamy canvas-confetti, ale zróbmy proste DOM particles)
-    const count = 50;
-    for (let i = 0; i < count; i++) {
-        const particle = document.createElement('div');
-        particle.style.position = 'fixed';
-        particle.style.top = '50%';
-        particle.style.left = '50%';
-        particle.style.width = '10px';
-        particle.style.height = '10px';
-        particle.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 50%)`;
-        particle.style.zIndex = '9999';
-        particle.style.borderRadius = '50%';
-        document.body.appendChild(particle);
-
+    const colors = ['#f00', '#0f0', '#00f', '#ff0', '#f0f', '#0ff'];
+    for(let i=0; i<100; i++) {
+        const p = document.createElement('div');
+        p.style.cssText = `position:fixed;top:50%;left:50%;width:8px;height:8px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:50%;pointer-events:none;z-index:9999;`;
+        document.body.appendChild(p);
         const angle = Math.random() * Math.PI * 2;
-        const velocity = 200 + Math.random() * 300;
-        const tx = Math.cos(angle) * velocity;
-        const ty = Math.sin(angle) * velocity;
-
-        gsap.to(particle, {
-            x: tx,
-            y: ty,
+        const dist = 100 + Math.random() * 400;
+        gsap.to(p, {
+            x: Math.cos(angle) * dist,
+            y: Math.sin(angle) * dist,
             opacity: 0,
             duration: 1 + Math.random(),
             ease: "power2.out",
-            onComplete: () => particle.remove()
+            onComplete: () => p.remove()
         });
     }
 }
 
-// --- GAME OVER MODAL ---
-function showGameOver(winnerNick) {
+// Modal Koniec Gry
+function showGameOver(winner) {
     gameOverModal = document.createElement('div');
     gameOverModal.className = 'modal-overlay';
-
     gameOverModal.innerHTML = `
         <div class="modal-content">
             <h1>KONIEC GRY!</h1>
-            <p style="font-size: 1.5rem; margin-bottom: 20px;">Zwycięzca:</p>
-            <h2 style="font-size: 3rem; color: #2ecc71; margin-bottom: 30px;">${winnerNick}</h2>
-            <button class="modal-btn" id="restart-game-btn">ZAGRAJ PONOWNIE</button>
+            <p>Mistrz humoru:</p>
+            <h2 style="font-size:3rem;color:#2ecc71">${winner}</h2>
+            <button class="modal-btn" onclick="socket.emit('start_game')">REWANŻ</button>
         </div>
     `;
-
     document.body.appendChild(gameOverModal);
-    fireConfetti(); // Więcej confetti!
+    fireConfetti();
+}
 
-    document.getElementById('restart-game-btn').addEventListener('click', () => {
-        socket.emit('start_game'); // Restartuje grę
-    });
+// Inicjalizacja tła (placeholder pod przyszłe efekty)
+function initBackgroundAnimation() {
+    // Tło jest obsługiwane przez CSS
 }
