@@ -22,6 +22,7 @@ const selectionControls = document.getElementById('selection-controls');
 const selectedCountSpan = document.getElementById('selected-count');
 const requiredCountSpan = document.getElementById('required-count');
 const confirmPlayBtn = document.getElementById('confirm-play-btn');
+const rerollBtn = document.getElementById('reroll-btn');
 
 // Settings Elements
 const settingsBtn = document.getElementById('settings-btn');
@@ -61,6 +62,7 @@ let gameState = 'LOBBY';
 let pickAmount = 1;
 let selectedCards = []; // Lista tekstów wybranych kart (strings)
 let pendingBlankCard = null; // Przechowuje element DOM karty, którą edytujemy
+let remainingRerolls = 3;
 
 // --- LOGOWANIE I INICJALIZACJA ---
 
@@ -249,6 +251,10 @@ socket.on('kicked', () => {
 
 // Aktualizacja ręki z serwera
 socket.on('hand_update', (data) => {
+    if(data.rerolls !== undefined) {
+        remainingRerolls = data.rerolls;
+        updateRerollBtn();
+    }
     updateHand(data.hand);
 });
 
@@ -334,6 +340,7 @@ socket.on('game_update', (data) => {
 
         timerDisplay.classList.add('hidden');
         selectionControls.classList.add('hidden');
+        if(rerollBtn) rerollBtn.classList.add('hidden');
     } else {
         startBtn.classList.add('hidden');
         const settingsBtn = document.getElementById('settings-btn');
@@ -348,13 +355,42 @@ socket.on('game_update', (data) => {
 
         if (gameState === 'SELECTION' && !isCzar) {
             selectionControls.classList.remove('hidden');
+            if(rerollBtn) {
+                rerollBtn.classList.remove('hidden');
+                updateRerollBtn();
+            }
             requiredCountSpan.textContent = pickAmount;
             updateSelectionUI();
         } else {
             selectionControls.classList.add('hidden');
+            if(rerollBtn) rerollBtn.classList.add('hidden');
         }
     }
 });
+
+// Reroll Events
+if(rerollBtn) {
+    rerollBtn.addEventListener('click', () => {
+        if(remainingRerolls > 0) {
+            if(confirm("Wymienić całą rękę?")) {
+                soundManager.playClick();
+                socket.emit('reroll_hand');
+            }
+        }
+    });
+}
+
+function updateRerollBtn() {
+    if(!rerollBtn) return;
+    rerollBtn.textContent = `Wymień rękę (${remainingRerolls}/3)`;
+    if(remainingRerolls <= 0) {
+        rerollBtn.disabled = true;
+        rerollBtn.style.opacity = 0.5;
+    } else {
+        rerollBtn.disabled = false;
+        rerollBtn.style.opacity = 1;
+    }
+}
 
 // Zatwierdzenie wyboru kart
 confirmPlayBtn.addEventListener('click', () => {
@@ -558,6 +594,25 @@ function updateTableCards(tableCards) {
             groupDiv.title = "Wybierz ten zestaw";
         }
 
+        // Add Reactions Overlay if not Czar and Judging
+        if (gameState === 'JUDGING' && !isCzar && entry.revealed) {
+            const reactionOverlay = document.createElement('div');
+            reactionOverlay.className = 'reaction-overlay';
+
+            const btnUp = document.createElement('button');
+            btnUp.innerHTML = '👍';
+            btnUp.onclick = (e) => { e.stopPropagation(); sendReaction('up', index); };
+
+            const btnDown = document.createElement('button');
+            btnDown.innerHTML = '👎';
+            btnDown.onclick = (e) => { e.stopPropagation(); sendReaction('down', index); };
+
+            reactionOverlay.appendChild(btnUp);
+            reactionOverlay.appendChild(btnDown);
+            groupDiv.appendChild(reactionOverlay);
+        }
+
+        groupDiv.setAttribute('id', `card-group-${index}`);
         playedCardsContainer.appendChild(groupDiv);
 
         if (gameState === 'JUDGING' && entry.revealed) {
@@ -691,7 +746,41 @@ function selectWinner(cards) {
     }
 }
 
+function sendReaction(type, targetIdx) {
+    socket.emit('send_reaction', { type: type, target_id: targetIdx });
+}
+
+socket.on('reaction_received', (data) => {
+    showReactionAnim(data.type, data.target_id);
+});
+
 // --- EFEKTY WIZUALNE ---
+
+function showReactionAnim(type, targetIdx) {
+    const group = document.getElementById(`card-group-${targetIdx}`);
+    if(!group) return;
+
+    const emoji = type === 'up' ? '👍' : '👎';
+    const el = document.createElement('div');
+    el.textContent = emoji;
+    el.style.cssText = `position: absolute; top: 50%; left: 50%; font-size: 3rem; pointer-events: none; z-index: 100; text-shadow: 0 0 10px black;`;
+
+    // Random offset
+    const offsetX = (Math.random() - 0.5) * 50;
+    const offsetY = (Math.random() - 0.5) * 50;
+
+    group.appendChild(el);
+
+    gsap.fromTo(el,
+        { x: -20 + offsetX, y: 0 + offsetY, scale: 0, opacity: 0 },
+        { y: -100 + offsetY, scale: 1.5, opacity: 1, duration: 0.5, ease: "back.out(1.7)", onComplete: () => {
+            gsap.to(el, { y: -150 + offsetY, opacity: 0, duration: 0.5, onComplete: () => el.remove() });
+        }}
+    );
+
+    if(type === 'up') soundManager.playTone(400, 'sine', 0.1, 0.05);
+    else soundManager.playTone(150, 'sawtooth', 0.1, 0.05);
+}
 
 // Efekt 3D Tilt (pochylenie karty)
 function addTiltEffect(element) {

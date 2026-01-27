@@ -42,6 +42,7 @@ class Game:
             'timer_duration': 60,
             'blank_cards': 0
         }
+        self.initial_rerolls = 3
 
     def reset_game(self):
         self.black_deck = CARDS['blackCards'][:]
@@ -59,6 +60,7 @@ class Game:
             self.players[sid]['score'] = 0
             self.players[sid]['hand'] = []
             self.players[sid]['is_czar'] = False
+            self.players[sid]['rerolls'] = self.initial_rerolls
 
         self.current_black_card = None
         self.table_cards = []
@@ -183,6 +185,11 @@ class Game:
 
 game = Game()
 
+@socketio.on('send_reaction')
+def on_reaction(data):
+    # data: {type: 'up'|'down', target_id: int} (target_id is index in table_cards)
+    socketio.emit('reaction_received', data)
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -235,7 +242,8 @@ def on_join(data):
         'score': 0,
         'hand': [],
         'is_czar': False,
-        'is_host': is_first
+        'is_host': is_first,
+        'rerolls': 3
     }
 
     game.persistent_players[new_token] = player_data
@@ -288,6 +296,31 @@ def on_stop_game():
     game.stop_timer()
     game.broadcast_message("Gra została zakończona przez hosta.")
     game.broadcast_state()
+
+@socketio.on('reroll_hand')
+def on_reroll_hand():
+    sid = request.sid
+    if sid not in game.players:
+        return
+
+    player = game.players[sid]
+    if player.get('rerolls', 0) <= 0:
+        emit('error', {'message': 'Brak żetonów wymiany!'})
+        return
+
+    # Return cards to deck (optional, or just discard)
+    # We'll just append them back to white_deck to avoid running out
+    game.white_deck.extend(player['hand'])
+    random.shuffle(game.white_deck)
+    player['hand'] = []
+
+    # Deal new cards (10)
+    game.deal_cards(sid, 10)
+
+    player['rerolls'] -= 1
+
+    emit('hand_update', {'hand': player['hand'], 'rerolls': player['rerolls']})
+    emit('message', {'text': 'Wymieniono rękę!'})
 
 @socketio.on('play_cards')
 def on_play_cards(data):

@@ -68,9 +68,12 @@
 
         <!-- Ręka gracza -->
         <div id="hand-section">
-            <div id="selection-controls" class="hidden">
-                <span>Wybrano: <span id="selected-count">0</span>/<span id="required-count">1</span></span>
-                <button id="confirm-play-btn" disabled>ZAGRAJ</button>
+            <div id="hand-controls-bar" style="position: absolute; top: -40px; width: 100%; display: flex; justify-content: center; gap: 1rem; pointer-events: none;">
+                <div id="selection-controls" class="hidden" style="pointer-events: auto;">
+                    <span>Wybrano: <span id="selected-count">0</span>/<span id="required-count">1</span></span>
+                    <button id="confirm-play-btn" disabled>ZAGRAJ</button>
+                </div>
+                <button id="reroll-btn" class="control-btn hidden" style="pointer-events: auto; font-size: 0.9rem;">Wymień rękę (3/3)</button>
             </div>
             <div id="hand-container">
                 <!-- Karty gracza -->
