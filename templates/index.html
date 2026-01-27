@@ -37,6 +37,12 @@
 
             <div id="timer-display" class="hidden">60</div>
 
+            <!-- Host Controls -->
+            <div id="host-controls" class="hidden" style="display: flex; gap: 0.5rem;">
+                <button id="pause-btn" class="control-btn" title="Pauza/Wznów">⏸</button>
+                <button id="stop-btn" class="control-btn" title="Zakończ grę">⏹</button>
+            </div>
+
             <button id="start-btn" class="hidden">ROZPOCZNIJ GRĘ</button>
         </div>
 
@@ -118,6 +124,14 @@
                 <button class="modal-btn" id="confirm-blank-btn">ZATWIERDŹ</button>
                 <button class="modal-btn" id="cancel-blank-btn" style="background: #333;">ANULUJ</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Pause Overlay -->
+    <div id="pause-overlay" class="modal-overlay hidden" style="background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);">
+        <div style="text-align: center;">
+            <h1 style="font-size: 4rem; text-shadow: 0 0 20px black;">PAUZA</h1>
+            <p>Oczekiwanie na wznowienie gry...</p>
         </div>
     </div>
 

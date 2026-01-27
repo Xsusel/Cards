@@ -33,6 +33,7 @@ class Game:
         self.table_cards = []  # List of {sid, cards: [text1, text2], nickname}
         self.czar_sid = None
         self.state = 'LOBBY'
+        self.paused = False
         self.password = "1234"
         self.timer = 0
         self.timer_thread = None
@@ -126,8 +127,9 @@ class Game:
     def timer_loop(self):
         while self.timer > 0 and self.state == 'SELECTION':
             socketio.sleep(1)
-            self.timer -= 1
-            socketio.emit('timer_update', {'time': self.timer})
+            if not self.paused:
+                self.timer -= 1
+                socketio.emit('timer_update', {'time': self.timer})
 
         if self.timer == 0 and self.state == 'SELECTION':
             # Time's up! Force state change?
@@ -161,6 +163,7 @@ class Game:
 
         state_data = {
             'state': self.state,
+            'paused': self.paused,
             'players': public_players,
             'current_black_card': self.current_black_card,
             'table_cards': visible_table,
@@ -263,6 +266,28 @@ def on_start():
     game.reset_game()
     game.start_round()
     game.broadcast_message("Gra rozpoczęta!")
+
+@socketio.on('toggle_pause')
+def on_toggle_pause():
+    sid = request.sid
+    if sid not in game.players or not game.players[sid].get('is_host', False):
+        return
+
+    game.paused = not game.paused
+    status = "wstrzymana" if game.paused else "wznowiona"
+    game.broadcast_message(f"Gra została {status}.")
+    game.broadcast_state()
+
+@socketio.on('stop_game_manual')
+def on_stop_game():
+    sid = request.sid
+    if sid not in game.players or not game.players[sid].get('is_host', False):
+        return
+
+    game.state = 'LOBBY'
+    game.stop_timer()
+    game.broadcast_message("Gra została zakończona przez hosta.")
+    game.broadcast_state()
 
 @socketio.on('play_cards')
 def on_play_cards(data):

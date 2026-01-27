@@ -38,6 +38,12 @@ const volumeVal = document.getElementById('volume-val');
 const statBlackCount = document.getElementById('stat-black-count');
 const statWhiteCount = document.getElementById('stat-white-count');
 
+// Host Controls
+const hostControls = document.getElementById('host-controls');
+const pauseBtn = document.getElementById('pause-btn');
+const stopBtn = document.getElementById('stop-btn');
+const pauseOverlay = document.getElementById('pause-overlay');
+
 // Blank Modal
 const blankModal = document.getElementById('blank-card-modal');
 const blankInput = document.getElementById('blank-card-input');
@@ -101,6 +107,22 @@ if(saveSettingsBtn) {
             settingsModal.classList.add('hidden');
             soundManager.playClick();
          }
+    });
+}
+
+// Host Control Events
+if(pauseBtn) {
+    pauseBtn.addEventListener('click', () => {
+        soundManager.playClick();
+        socket.emit('toggle_pause');
+    });
+}
+if(stopBtn) {
+    stopBtn.addEventListener('click', () => {
+        if(confirm("Czy na pewno chcesz zakończyć grę i wrócić do lobby?")) {
+            soundManager.playClick();
+            socket.emit('stop_game_manual');
+        }
     });
 }
 
@@ -289,6 +311,15 @@ socket.on('game_update', (data) => {
         window.updateSettingsUI(data.settings);
     }
 
+    // Pause State
+    if(data.paused) {
+        pauseOverlay.classList.remove('hidden');
+        if(pauseBtn) pauseBtn.textContent = '▶ Wznów';
+    } else {
+        pauseOverlay.classList.add('hidden');
+        if(pauseBtn) pauseBtn.textContent = '⏸ Pauza';
+    }
+
     // Widoczność kontrolek
     if (gameState === 'LOBBY') {
         startBtn.classList.remove('hidden');
@@ -297,6 +328,9 @@ socket.on('game_update', (data) => {
         if (settingsBtn) {
             settingsBtn.classList.toggle('hidden', !isHost);
         }
+        if (hostControls) {
+            hostControls.classList.add('hidden');
+        }
 
         timerDisplay.classList.add('hidden');
         selectionControls.classList.add('hidden');
@@ -304,6 +338,11 @@ socket.on('game_update', (data) => {
         startBtn.classList.add('hidden');
         const settingsBtn = document.getElementById('settings-btn');
         if (settingsBtn) settingsBtn.classList.add('hidden');
+
+        // Show host controls
+        if (hostControls) {
+            hostControls.classList.toggle('hidden', !isHost);
+        }
 
         timerDisplay.classList.remove('hidden');
 
