@@ -23,17 +23,59 @@ const selectedCountSpan = document.getElementById('selected-count');
 const requiredCountSpan = document.getElementById('required-count');
 const confirmPlayBtn = document.getElementById('confirm-play-btn');
 
+// Settings Elements
+const settingsBtn = document.getElementById('settings-btn');
+const settingsModal = document.getElementById('settings-modal');
+const closeSettingsBtn = document.getElementById('close-settings-btn');
+const saveSettingsBtn = document.getElementById('save-settings-btn');
+const setMaxScore = document.getElementById('set-max-score');
+const setTimer = document.getElementById('set-timer');
+
 let gameOverModal = null;
 
 // Lokalny stan gry
 let myNickname = '';
 let isCzar = false;
+let isHost = false;
 let currentHand = [];
 let gameState = 'LOBBY';
 let pickAmount = 1;
 let selectedCards = []; // Lista tekstów wybranych kart
 
 // --- LOGOWANIE I INICJALIZACJA ---
+
+// Auto-reconnect check
+window.addEventListener('load', () => {
+    const savedToken = localStorage.getItem('cah_token');
+    if (savedToken) {
+        socket.emit('join_game', { token: savedToken });
+    }
+});
+
+// Settings Events
+if(settingsBtn) {
+    settingsBtn.addEventListener('click', () => {
+         soundManager.playClick();
+         settingsModal.classList.remove('hidden');
+    });
+}
+if(closeSettingsBtn) {
+    closeSettingsBtn.addEventListener('click', () => {
+         soundManager.playClick();
+         settingsModal.classList.add('hidden');
+    });
+}
+if(saveSettingsBtn) {
+    saveSettingsBtn.addEventListener('click', () => {
+         const maxScore = parseInt(setMaxScore.value);
+         const timer = parseInt(setTimer.value);
+         if(maxScore && timer) {
+            socket.emit('update_settings', { max_score: maxScore, timer_duration: timer });
+            settingsModal.classList.add('hidden');
+            soundManager.playClick();
+         }
+    });
+}
 
 // Obsługa przycisku dołączania
 joinBtn.addEventListener('click', () => {
@@ -54,23 +96,41 @@ joinBtn.addEventListener('click', () => {
 socket.on('join_error', (data) => {
     loginError.textContent = data.message;
     soundManager.playTone(200, 'sawtooth', 0.2); // Dźwięk błędu
+    // Jeśli błąd logowania (np. złe hasło przy reconnect), czyść token
+    localStorage.removeItem('cah_token');
 });
 
 // Sukces logowania - animacja wejścia
-socket.on('join_success', () => {
+socket.on('join_success', (data) => {
+    if (data.token) {
+        localStorage.setItem('cah_token', data.token);
+    }
+    if (data.nickname) {
+        myNickname = data.nickname;
+    }
+
     soundManager.playTone(600, 'sine', 0.3);
-    gsap.to('.login-container', { scale: 0.8, opacity: 0, duration: 0.3 });
-    gsap.to(loginScreen, {
-        opacity: 0,
-        delay: 0.2,
-        duration: 0.5,
-        onComplete: () => {
-            loginScreen.classList.add('hidden');
-            gameArea.classList.remove('hidden');
-            gsap.from(gameArea, { opacity: 0, duration: 0.8 });
-            initBackgroundAnimation();
-        }
-    });
+
+    if (data.reconnect) {
+        // Szybkie wejście bez animacji powitalnej
+        loginScreen.classList.add('hidden');
+        gameArea.classList.remove('hidden');
+        initBackgroundAnimation();
+    } else {
+        // Pełna animacja
+        gsap.to('.login-container', { scale: 0.8, opacity: 0, duration: 0.3 });
+        gsap.to(loginScreen, {
+            opacity: 0,
+            delay: 0.2,
+            duration: 0.5,
+            onComplete: () => {
+                loginScreen.classList.add('hidden');
+                gameArea.classList.remove('hidden');
+                gsap.from(gameArea, { opacity: 0, duration: 0.8 });
+                initBackgroundAnimation();
+            }
+        });
+    }
 });
 
 // --- PĘTLA GRY ---
@@ -109,6 +169,17 @@ socket.on('game_over', (data) => {
     showGameOver(data.winner);
 });
 
+// Aktualizacja ustawień
+socket.on('settings_updated', (settings) => {
+    updateSettingsUI(settings);
+    showToast("Ustawienia zaktualizowane!");
+});
+
+window.updateSettingsUI = (settings) => {
+    if(settings.max_score) setMaxScore.value = settings.max_score;
+    if(settings.timer_duration) setTimer.value = settings.timer_duration;
+};
+
 // Główna aktualizacja stanu gry
 socket.on('game_update', (data) => {
     if (gameOverModal && data.state === 'LOBBY') {
@@ -130,13 +201,27 @@ socket.on('game_update', (data) => {
     updateBlackCard(data.current_black_card);
     updateTableCards(data.table_cards);
 
+    // Obsługa Settings UI (to be added in next step, but preparing hook)
+    if (window.updateSettingsUI && data.settings) {
+        window.updateSettingsUI(data.settings);
+    }
+
     // Widoczność kontrolek
     if (gameState === 'LOBBY') {
         startBtn.classList.remove('hidden');
+        // Pokaż przycisk ustawień jeśli Host
+        const settingsBtn = document.getElementById('settings-btn');
+        if (settingsBtn) {
+            settingsBtn.classList.toggle('hidden', !isHost);
+        }
+
         timerDisplay.classList.add('hidden');
         selectionControls.classList.add('hidden');
     } else {
         startBtn.classList.add('hidden');
+        const settingsBtn = document.getElementById('settings-btn');
+        if (settingsBtn) settingsBtn.classList.add('hidden');
+
         timerDisplay.classList.remove('hidden');
 
         if (gameState === 'SELECTION' && !isCzar) {
@@ -184,7 +269,10 @@ function showToast(msg) {
 function updateStatusPanel(data) {
     czarName.textContent = data.czar_nickname || '-';
     const me = data.players.find(p => p.nickname === myNickname);
-    if (me) isCzar = me.is_czar;
+    if (me) {
+        isCzar = me.is_czar;
+        isHost = me.is_host;
+    }
 
     let statusText = '';
     if (data.state === 'LOBBY') statusText = 'Oczekiwanie...';

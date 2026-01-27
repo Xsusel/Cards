@@ -32,6 +32,7 @@
             <div class="status-panel">
                 <h2 id="game-status">Oczekiwanie...</h2>
                 <div id="czar-display">Car: <span id="czar-name">-</span></div>
+                <button id="settings-btn" class="hidden">⚙️ Ustawienia</button>
             </div>
 
             <div id="timer-display" class="hidden">60</div>
@@ -67,6 +68,25 @@
             </div>
             <div id="hand-container">
                 <!-- Karty gracza -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h1>Ustawienia Gry</h1>
+            <div class="setting-item">
+                <label>Punkty do zwycięstwa:</label>
+                <input type="number" id="set-max-score" min="1" max="20" value="8">
+            </div>
+            <div class="setting-item">
+                <label>Czas na rundę (s):</label>
+                <input type="number" id="set-timer" min="10" max="300" value="60">
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn" id="save-settings-btn">ZAPISZ</button>
+                <button class="modal-btn" id="close-settings-btn" style="background: #333;">ANULUJ</button>
             </div>
         </div>
     </div>
