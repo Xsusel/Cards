@@ -159,3 +159,60 @@ Gotowe! Twoja gra powinna być dostępna pod adresem `https://twoja-domena.pl`.
 *   `static/` - Pliki CSS, JS, dźwięki.
 *   `templates/` - Pliki HTML.
 *   `scripts/` - Skrypty pomocnicze (np. dodawanie kart).
+
+## Zarządzanie aplikacją
+
+Oto podstawowe komendy do zarządzania serwerem gry:
+
+### Restartowanie, Zatrzymywanie, Startowanie
+
+```bash
+# Restart aplikacji (np. po zmianie kodu)
+sudo systemctl restart cah
+
+# Zatrzymanie aplikacji
+sudo systemctl stop cah
+
+# Uruchomienie aplikacji
+sudo systemctl start cah
+```
+
+### Sprawdzanie statusu i logów
+
+Jeśli coś nie działa, sprawdź status usługi:
+
+```bash
+sudo systemctl status cah
+```
+
+Aby zobaczyć logi błędów i komunikaty serwera w czasie rzeczywistym:
+
+```bash
+sudo journalctl -u cah -f
+```
+
+## Aktualizacja aplikacji
+
+Jeśli wyszła nowa wersja gry (zmieniono kod w repozytorium), wykonaj poniższe kroki, aby zaktualizować serwer:
+
+1.  Wejdź do katalogu z grą:
+    ```bash
+    cd /opt/cah
+    ```
+
+2.  Pobierz najnowsze zmiany:
+    ```bash
+    sudo git pull
+    ```
+
+3.  (Opcjonalnie) Jeśli zmieniły się wymagania bibliotek, zaktualizuj je:
+    ```bash
+    source venv/bin/activate
+    pip install -r requirements.txt
+    deactivate
+    ```
+
+4.  Zrestartuj usługę, aby załadować nową wersję:
+    ```bash
+    sudo systemctl restart cah
+    ```
