@@ -33,6 +33,7 @@ const saveSettingsBtn = document.getElementById('save-settings-btn');
 
 const setMaxScore = document.getElementById('set-max-score');
 const setTimer = document.getElementById('set-timer');
+const infiniteTimerCheck = document.getElementById('infinite-timer-check');
 const setBlankCards = document.getElementById('set-blank-cards');
 const volumeSlider = document.getElementById('volume-slider');
 const volumeVal = document.getElementById('volume-val');
@@ -95,13 +96,22 @@ if(volumeSlider) {
         soundManager.setVolume(val / 100);
     });
 }
+if(infiniteTimerCheck) {
+    infiniteTimerCheck.addEventListener('change', (e) => {
+        setTimer.disabled = e.target.checked;
+        if(e.target.checked) setTimer.style.opacity = 0.5;
+        else setTimer.style.opacity = 1;
+    });
+}
 if(saveSettingsBtn) {
     saveSettingsBtn.addEventListener('click', () => {
          const maxScore = parseInt(setMaxScore.value);
-         const timer = parseInt(setTimer.value);
+         let timer = parseInt(setTimer.value);
+         if(infiniteTimerCheck.checked) timer = 0;
+
          const blanks = parseInt(setBlankCards.value);
 
-         if(maxScore && timer) {
+         if(maxScore && timer !== undefined) {
             socket.emit('update_settings', {
                 max_score: maxScore,
                 timer_duration: timer,
@@ -231,6 +241,66 @@ socket.on('join_success', (data) => {
             }
         });
     }
+
+    // Init Chat UI
+    if(chatToggleBtn) chatToggleBtn.classList.remove('hidden');
+});
+
+// --- CZAT ---
+if(chatToggleBtn) {
+    chatToggleBtn.addEventListener('click', () => {
+        chatWindow.classList.remove('hidden');
+        chatToggleBtn.classList.add('hidden');
+        chatInput.focus();
+    });
+}
+if(chatCloseBtn) {
+    chatCloseBtn.addEventListener('click', () => {
+        chatWindow.classList.add('hidden');
+        chatToggleBtn.classList.remove('hidden');
+    });
+}
+if(chatSendBtn) {
+    chatSendBtn.addEventListener('click', sendChat);
+}
+if(chatInput) {
+    chatInput.addEventListener('keypress', (e) => {
+        if(e.key === 'Enter') sendChat();
+    });
+}
+
+function sendChat() {
+    const msg = chatInput.value.trim();
+    if(!msg) return;
+    socket.emit('send_chat', { message: msg });
+    chatInput.value = '';
+}
+
+socket.on('new_chat', (data) => {
+    const div = document.createElement('div');
+    div.style.marginBottom = '5px';
+    div.style.lineHeight = '1.3';
+
+    const timeSpan = document.createElement('span');
+    timeSpan.textContent = `[${data.timestamp}] `;
+    timeSpan.style.color = '#666';
+    timeSpan.style.fontSize = '0.75rem';
+
+    const nickSpan = document.createElement('span');
+    nickSpan.textContent = `${data.nickname}: `;
+    nickSpan.style.fontWeight = 'bold';
+    nickSpan.style.color = data.is_spectator ? '#aaa' : '#fff';
+
+    const msgSpan = document.createElement('span');
+    msgSpan.textContent = data.message;
+    msgSpan.style.color = '#ddd';
+
+    div.appendChild(timeSpan);
+    div.appendChild(nickSpan);
+    div.appendChild(msgSpan);
+
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 });
 
 // --- PĘTLA GRY ---
@@ -289,7 +359,18 @@ socket.on('settings_updated', (settings) => {
 
 window.updateSettingsUI = (settings) => {
     if(settings.max_score) setMaxScore.value = settings.max_score;
-    if(settings.timer_duration) setTimer.value = settings.timer_duration;
+    if(settings.timer_duration !== undefined) {
+        if(settings.timer_duration === 0) {
+            infiniteTimerCheck.checked = true;
+            setTimer.disabled = true;
+            setTimer.style.opacity = 0.5;
+        } else {
+            setTimer.value = settings.timer_duration;
+            infiniteTimerCheck.checked = false;
+            setTimer.disabled = false;
+            setTimer.style.opacity = 1;
+        }
+    }
     if(settings.blank_cards !== undefined) setBlankCards.value = settings.blank_cards;
 };
 
