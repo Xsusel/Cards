@@ -162,6 +162,10 @@ class Game:
         public_players = []
 
         for sid, p in self.players.items():
+            # Debug Host status
+            if p.get('is_host', False):
+                print(f"DEBUG BROADCAST: {p['nickname']} is HOST")
+
             public_players.append({
                 'nickname': p['nickname'],
                 'score': p['score'],

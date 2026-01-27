@@ -33,6 +33,7 @@ const saveSettingsBtn = document.getElementById('save-settings-btn');
 
 const setMaxScore = document.getElementById('set-max-score');
 const setTimer = document.getElementById('set-timer');
+// Ensure element exists before access
 const infiniteTimerCheck = document.getElementById('infinite-timer-check');
 const setBlankCards = document.getElementById('set-blank-cards');
 const volumeSlider = document.getElementById('volume-slider');
@@ -358,24 +359,36 @@ socket.on('settings_updated', (settings) => {
 });
 
 window.updateSettingsUI = (settings) => {
-    if(settings.max_score) setMaxScore.value = settings.max_score;
-    if(settings.timer_duration !== undefined) {
-        if(settings.timer_duration === 0) {
-            infiniteTimerCheck.checked = true;
-            setTimer.disabled = true;
-            setTimer.style.opacity = 0.5;
-        } else {
-            setTimer.value = settings.timer_duration;
-            infiniteTimerCheck.checked = false;
-            setTimer.disabled = false;
-            setTimer.style.opacity = 1;
+    try {
+        if(settings.max_score && setMaxScore) setMaxScore.value = settings.max_score;
+        if(settings.timer_duration !== undefined && setTimer) {
+            if(settings.timer_duration === 0) {
+                if(infiniteTimerCheck) infiniteTimerCheck.checked = true;
+                setTimer.disabled = true;
+                setTimer.style.opacity = 0.5;
+            } else {
+                setTimer.value = settings.timer_duration;
+                if(infiniteTimerCheck) infiniteTimerCheck.checked = false;
+                setTimer.disabled = false;
+                setTimer.style.opacity = 1;
+            }
         }
+        if(settings.blank_cards !== undefined && setBlankCards) setBlankCards.value = settings.blank_cards;
+    } catch(e) {
+        console.error("Error updating settings UI:", e);
     }
-    if(settings.blank_cards !== undefined) setBlankCards.value = settings.blank_cards;
 };
 
 // Główna aktualizacja stanu gry
 socket.on('game_update', (data) => {
+    try {
+        handleGameUpdate(data);
+    } catch(e) {
+        console.error("Game update error:", e);
+    }
+});
+
+function handleGameUpdate(data) {
     if (gameOverModal && data.state === 'LOBBY') {
         document.body.removeChild(gameOverModal);
         gameOverModal = null;
@@ -413,9 +426,17 @@ socket.on('game_update', (data) => {
         if(pauseBtn) pauseBtn.textContent = '⏸ Pauza';
     }
 
+    // Debug Expose
+    window.isHost = isHost;
+    window.gameState = gameState;
+    window.myNickname = myNickname;
+
     // Widoczność kontrolek
     if (gameState === 'LOBBY') {
-        startBtn.classList.remove('hidden');
+        // Start Button only for Host
+        if (isHost) startBtn.classList.remove('hidden');
+        else startBtn.classList.add('hidden');
+
         // Pokaż przycisk ustawień jeśli Host
         const settingsBtn = document.getElementById('settings-btn');
         if (settingsBtn) {
