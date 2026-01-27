@@ -47,12 +47,21 @@ const hostControls = document.getElementById('host-controls');
 const pauseBtn = document.getElementById('pause-btn');
 const stopBtn = document.getElementById('stop-btn');
 const pauseOverlay = document.getElementById('pause-overlay');
+const resumeOverlayBtn = document.getElementById('resume-overlay-btn');
 
 // Blank Modal
 const blankModal = document.getElementById('blank-card-modal');
 const blankInput = document.getElementById('blank-card-input');
 const confirmBlankBtn = document.getElementById('confirm-blank-btn');
 const cancelBlankBtn = document.getElementById('cancel-blank-btn');
+
+// Chat Elements
+const chatToggleBtn = document.getElementById('chat-toggle-btn');
+const chatWindow = document.getElementById('chat-window');
+const chatCloseBtn = document.getElementById('chat-close-btn');
+const chatMessages = document.getElementById('chat-messages');
+const chatInput = document.getElementById('chat-input');
+const chatSendBtn = document.getElementById('chat-send-btn');
 
 let gameOverModal = null;
 
@@ -137,6 +146,13 @@ if(stopBtn) {
             soundManager.playClick();
             socket.emit('stop_game_manual');
         }
+    });
+}
+
+if(resumeOverlayBtn) {
+    resumeOverlayBtn.addEventListener('click', () => {
+        soundManager.playClick();
+        socket.emit('toggle_pause');
     });
 }
 
@@ -421,6 +437,7 @@ function handleGameUpdate(data) {
     if(data.paused) {
         pauseOverlay.classList.remove('hidden');
         if(pauseBtn) pauseBtn.textContent = '▶ Wznów';
+        if(resumeOverlayBtn) resumeOverlayBtn.classList.toggle('hidden', !isHost);
     } else {
         pauseOverlay.classList.add('hidden');
         if(pauseBtn) pauseBtn.textContent = '⏸ Pauza';
@@ -474,7 +491,7 @@ function handleGameUpdate(data) {
             if(rerollBtn) rerollBtn.classList.add('hidden');
         }
     }
-});
+}
 
 // Reroll Events
 if(rerollBtn) {

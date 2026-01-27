@@ -209,6 +209,27 @@ def on_reaction(data):
     # data: {type: 'up'|'down', target_id: int} (target_id is index in table_cards)
     socketio.emit('reaction_received', data)
 
+@socketio.on('send_chat')
+def on_send_chat(data):
+    sid = request.sid
+    if sid not in game.players:
+        return
+
+    msg = data.get('message', '').strip()
+    if not msg:
+        return
+
+    nickname = game.players[sid]['nickname']
+    is_spectator = game.players[sid].get('is_spectator', False)
+    timestamp = time.strftime('%H:%M')
+
+    socketio.emit('new_chat', {
+        'nickname': nickname,
+        'message': msg,
+        'timestamp': timestamp,
+        'is_spectator': is_spectator
+    })
+
 @app.route('/')
 def index():
     return render_template('index.html')
