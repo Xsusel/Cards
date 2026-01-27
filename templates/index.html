@@ -21,7 +21,10 @@
             <h1>DOŁĄCZ DO GRY</h1>
             <input type="text" id="nickname" placeholder="Twój Nick" maxlength="15">
             <input type="password" id="password" placeholder="Hasło Sesji">
-            <button id="join-btn">WEJDŹ</button>
+            <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                <button id="join-btn">WEJDŹ</button>
+                <button id="spectate-btn" class="secondary-btn" style="font-size: 1rem;">OGLĄDAJ</button>
+            </div>
             <p id="login-error" class="error-msg"></p>
         </div>
     </div>

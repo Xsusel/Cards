@@ -6,6 +6,7 @@ const gameArea = document.getElementById('game-area');
 const nicknameInput = document.getElementById('nickname');
 const passwordInput = document.getElementById('password');
 const joinBtn = document.getElementById('join-btn');
+const spectateBtn = document.getElementById('spectate-btn');
 const loginError = document.getElementById('login-error');
 
 const startBtn = document.getElementById('start-btn');
@@ -171,8 +172,7 @@ if(cancelBlankBtn) {
 }
 
 
-// Obsługa przycisku dołączania
-joinBtn.addEventListener('click', () => {
+function handleJoin(isSpectator) {
     soundManager.playClick();
     const nickname = nicknameInput.value.trim();
     const password = passwordInput.value.trim();
@@ -183,8 +183,14 @@ joinBtn.addEventListener('click', () => {
     }
 
     myNickname = nickname;
-    socket.emit('join_game', { nickname, password });
-});
+    socket.emit('join_game', { nickname, password, is_spectator: isSpectator });
+}
+
+// Obsługa przycisku dołączania
+joinBtn.addEventListener('click', () => handleJoin(false));
+if(spectateBtn) {
+    spectateBtn.addEventListener('click', () => handleJoin(true));
+}
 
 // Błąd logowania
 socket.on('join_error', (data) => {
@@ -429,17 +435,28 @@ function showToast(msg) {
 function updateStatusPanel(data) {
     czarName.textContent = data.czar_nickname || '-';
     const me = data.players.find(p => p.nickname === myNickname);
+    let isSpectator = false;
+
     if (me) {
         isCzar = me.is_czar;
         isHost = me.is_host;
+        isSpectator = me.is_spectator;
     }
 
     let statusText = '';
-    if (data.state === 'LOBBY') statusText = 'Oczekiwanie...';
+    if (isSpectator) statusText = "TRYB OBSERWATORA";
+    else if (data.state === 'LOBBY') statusText = 'Oczekiwanie...';
     else if (data.state === 'SELECTION') statusText = isCzar ? 'Jesteś Carem. Czekaj.' : `Wybierz ${pickAmount} kart(y)!`;
     else if (data.state === 'JUDGING') statusText = isCzar ? 'Wybierz zwycięzcę!' : 'Car wybiera...';
 
     gameStatus.textContent = statusText;
+
+    // Hide hand area if spectator
+    const handSection = document.getElementById('hand-section');
+    if (handSection) {
+        if(isSpectator) handSection.classList.add('hidden');
+        else handSection.classList.remove('hidden');
+    }
 }
 
 // Generowanie koloru avatara na podstawie nicku
@@ -483,7 +500,12 @@ function updatePlayerList(players) {
         li.appendChild(avatar);
         li.appendChild(details);
 
-        if (p.is_czar) {
+        if (p.is_spectator) {
+            const badge = document.createElement('span');
+            badge.style.cssText = 'background: #555; padding: 2px 5px; font-size: 0.7rem; margin-left: 5px; border-radius: 3px;';
+            badge.textContent = 'WIDZ';
+            li.appendChild(badge);
+        } else if (p.is_czar) {
             li.classList.add('is-czar');
             const badge = document.createElement('span');
             badge.className = 'czar-badge';

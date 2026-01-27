@@ -66,6 +66,7 @@ class Game:
         self.table_cards = []
         self.czar_sid = None
         self.state = 'LOBBY'
+        self.paused = False
         self.stop_timer()
 
     def update_settings(self, new_settings):
@@ -78,6 +79,10 @@ class Game:
         socketio.emit('settings_updated', self.settings)
 
     def deal_cards(self, sid, count=1):
+        if sid not in self.players: return
+        # Skip if spectator
+        if self.players[sid].get('is_spectator'): return
+
         hand = self.players[sid]['hand']
         for _ in range(count):
             if self.white_deck:
@@ -101,14 +106,30 @@ class Game:
         self.state = 'SELECTION'
 
         # Czar rotation
-        sids = list(self.players.keys())
-        if not self.czar_sid or self.czar_sid not in sids:
-            self.czar_sid = sids[0]
+        # Filter active players (non-spectators)
+        active_sids = [sid for sid, p in self.players.items() if not p.get('is_spectator', False)]
+
+        if not active_sids:
+            self.broadcast_message("Brak aktywnych graczy.")
+            self.state = 'LOBBY'
+            self.broadcast_state()
+            return
+
+        if not self.czar_sid or self.czar_sid not in active_sids:
+            self.czar_sid = active_sids[0]
         else:
-            current_index = sids.index(self.czar_sid)
-            self.czar_sid = sids[(current_index + 1) % len(sids)]
+            try:
+                current_index = active_sids.index(self.czar_sid)
+                self.czar_sid = active_sids[(current_index + 1) % len(active_sids)]
+            except ValueError:
+                self.czar_sid = active_sids[0]
 
         for sid in self.players:
+            # Skip spectators
+            if self.players[sid].get('is_spectator', False):
+                self.players[sid]['is_czar'] = False
+                continue
+
             self.players[sid]['is_czar'] = (sid == self.czar_sid)
             needed = 10 - len(self.players[sid]['hand']) # Increase hand size for Pick 2 fun
             if needed > 0:
@@ -134,16 +155,11 @@ class Game:
                 socketio.emit('timer_update', {'time': self.timer})
 
         if self.timer == 0 and self.state == 'SELECTION':
-            # Time's up! Force state change?
-            # Ideally auto-play random cards for slow players,
-            # but for now we just nudge or let it hang (simple version).
+            # Time's up!
             socketio.emit('message', {'text': 'Czas minął!'})
 
     def broadcast_state(self):
         public_players = []
-        # Include persistent players even if offline (optional, or just online ones)
-        # We focus on online players for now + recently disconnected?
-        # Actually, let's just iterate self.players which should be active sessions.
 
         for sid, p in self.players.items():
             public_players.append({
@@ -151,7 +167,8 @@ class Game:
                 'score': p['score'],
                 'is_czar': p['is_czar'],
                 'is_host': p.get('is_host', False),
-                'has_played': any(c['sid'] == sid for c in self.table_cards)
+                'has_played': any(c['sid'] == sid for c in self.table_cards),
+                'is_spectator': p.get('is_spectator', False)
             })
 
         visible_table = []
@@ -161,15 +178,13 @@ class Game:
             else:
                 visible_table.append({'sid': entry['sid'], 'cards': entry['cards'], 'revealed': True})
 
-        # Shuffle table for judging if needed (done at state transition)
-
         state_data = {
             'state': self.state,
             'paused': self.paused,
             'players': public_players,
             'current_black_card': self.current_black_card,
             'table_cards': visible_table,
-            'czar_nickname': self.players[self.czar_sid]['nickname'] if self.czar_sid else None,
+            'czar_nickname': self.players[self.czar_sid]['nickname'] if self.czar_sid and self.czar_sid in self.players else None,
             'settings': self.settings,
             'total_black': len(CARDS['blackCards']),
             'total_white': len(CARDS['whiteCards'])
@@ -199,6 +214,7 @@ def on_join(data):
     nickname = data.get('nickname')
     password = data.get('password')
     token = data.get('token')
+    is_spectator = data.get('is_spectator', False)
 
     # Check for reconnection
     if token and token in game.persistent_players:
@@ -235,7 +251,10 @@ def on_join(data):
 
     # Generate new token
     new_token = str(uuid.uuid4())
-    is_first = len(game.players) == 0
+
+    # Check host: If no active players exist, this new person is host (unless they are spectator)
+    active_players = [p for p in game.players.values() if not p.get('is_spectator', False)]
+    is_first = (len(active_players) == 0) and (not is_spectator)
 
     player_data = {
         'nickname': nickname,
@@ -243,7 +262,8 @@ def on_join(data):
         'hand': [],
         'is_czar': False,
         'is_host': is_first,
-        'rerolls': 3
+        'rerolls': 3,
+        'is_spectator': is_spectator
     }
 
     game.persistent_players[new_token] = player_data
@@ -253,7 +273,9 @@ def on_join(data):
     join_room('game_room')
     emit('join_success', {'token': new_token, 'reconnect': False, 'nickname': nickname})
     game.broadcast_state()
-    game.broadcast_message(f"Gracz {nickname} dołączył do gry.")
+
+    role_msg = "obserwator" if is_spectator else "gracz"
+    game.broadcast_message(f"{nickname} dołączył jako {role_msg}.")
 
 @socketio.on('update_settings')
 def on_update_settings(data):
@@ -267,8 +289,11 @@ def on_update_settings(data):
 
 @socketio.on('start_game')
 def on_start():
-    if len(game.players) < 3:
-        game.broadcast_message("Potrzeba minimum 3 graczy.")
+    # Only count active players for start condition
+    active_players = [p for p in game.players.values() if not p.get('is_spectator', False)]
+
+    if len(active_players) < 3:
+        game.broadcast_message("Potrzeba minimum 3 aktywnych graczy.")
         # pass # Allow for testing
 
     game.reset_game()
@@ -304,12 +329,14 @@ def on_reroll_hand():
         return
 
     player = game.players[sid]
+    if player.get('is_spectator', False):
+        return
+
     if player.get('rerolls', 0) <= 0:
         emit('error', {'message': 'Brak żetonów wymiany!'})
         return
 
-    # Return cards to deck (optional, or just discard)
-    # We'll just append them back to white_deck to avoid running out
+    # Return cards to deck
     game.white_deck.extend(player['hand'])
     random.shuffle(game.white_deck)
     player['hand'] = []
@@ -324,27 +351,17 @@ def on_reroll_hand():
 
 @socketio.on('play_cards')
 def on_play_cards(data):
-    """
-    Gracz zagrywa karty (lista).
-    data['cards'] = ['Tekst1', 'Tekst2']
-    """
     sid = request.sid
     if game.state != 'SELECTION':
         return
     if game.players[sid]['is_czar']:
         return
+    if game.players[sid].get('is_spectator', False):
+        return
     if any(c['sid'] == sid for c in game.table_cards):
         return
 
     cards = data.get('cards', [])
-    # Optional custom text for blanks, mapped by index or logic
-    # Client sends: cards=['Text1', '<<BLANK>>'], custom_texts={'<<BLANK>>': 'My Text'}
-    # Or simpler: Client sends already replaced text, but we must verify the ORIGINAL was in hand.
-    # Approach: Client sends 'original_cards' and 'final_cards'.
-    # Actually, simplest is:
-    # Client sends cards=['Text1', 'My Custom Text']
-    # Server checks if 'My Custom Text' is in hand OR if '<<BLANK>>' is in hand.
-
     pick_needed = game.current_black_card.get('pick', 1)
 
     if len(cards) != pick_needed:
@@ -361,16 +378,13 @@ def on_play_cards(data):
             temp_hand.remove(c)
             final_cards_for_table.append(c)
         elif '<<BLANK>>' in temp_hand:
-            # Assume this is a filled-in blank
-            # Sanitize input (basic)
-            sanitized = str(c).replace('<', '&lt;').replace('>', '&gt;')[:100] # Limit length
+            sanitized = str(c).replace('<', '&lt;').replace('>', '&gt;')[:100]
             temp_hand.remove('<<BLANK>>')
             final_cards_for_table.append(sanitized)
         else:
             emit('error', {'message': 'Nie masz tej karty!'})
             return
 
-    # Update hand
     game.players[sid]['hand'] = temp_hand
 
     game.table_cards.append({
@@ -381,9 +395,11 @@ def on_play_cards(data):
 
     game.broadcast_state()
 
-    # Check if all players played
-    not_czars_count = len(game.players) - 1
-    if len(game.table_cards) >= not_czars_count:
+    # Check if all active players (except Czar and Spectators) played
+    active_players = [p for p in game.players.values() if not p.get('is_spectator', False)]
+    players_needed = len(active_players) - 1
+
+    if len(game.table_cards) >= players_needed:
         game.state = 'JUDGING'
         game.stop_timer()
         random.shuffle(game.table_cards)
@@ -397,12 +413,10 @@ def on_select_winner(data):
     if not game.players[sid]['is_czar']:
         return
 
-    # data['cards'] should match the winning entry's cards
     winner_cards = data.get('cards')
 
     winner_sid = None
     for entry in game.table_cards:
-        # Compare lists (order matters usually, but exact match needed)
         if entry['cards'] == winner_cards:
             winner_sid = entry['sid']
             break
@@ -435,18 +449,10 @@ def on_kick_player(data):
             break
 
     if target_sid:
-        # Disconnect them socket-side
         socketio.emit('kicked', room=target_sid)
-        # Their client should handle disconnect, but we force cleanup
-        # on_disconnect will be called by socketio, but we can preemptively remove
-        # Remove from persistence to prevent rejoin
         target_token = game.sid_map.get(target_sid)
         if target_token and target_token in game.persistent_players:
             del game.persistent_players[target_token]
-
-        # Actual disconnect logic happens in on_disconnect, but we can trigger it or let client do it
-        # socketio.server.disconnect(target_sid) # Implementation varies by backend
-        pass
 
 @socketio.on('disconnect')
 def on_disconnect():
@@ -461,27 +467,42 @@ def on_disconnect():
         game.broadcast_message(f"Gracz {nick} rozłączył się.")
 
         if not game.players:
-            # Everyone left - Hard Reset
             print("All players disconnected. Resetting game state.")
             game.persistent_players.clear()
             game.reset_game()
             game.state = 'LOBBY'
-            # No one to broadcast to
             return
 
         # If host left, assign new host
-        if game.players:
-            # Check if host still exists
-            has_host = any(p.get('is_host') for p in game.players.values())
-            if not has_host:
-                first_sid = list(game.players.keys())[0]
-                game.players[first_sid]['is_host'] = True
+        # Check if host still exists (and is not spectator preferably, but if only spectators left, what then?)
+        # Logic: Assign host to first active player. If no active, first spectator.
+        current_hosts = [p for p in game.players.values() if p.get('is_host')]
+        if not current_hosts:
+            # Priority: Active Player > Spectator
+            candidates = [s for s, p in game.players.items() if not p.get('is_spectator')]
+            if not candidates:
+                candidates = list(game.players.keys())
 
-        if len(game.players) < 2 and game.state != 'LOBBY':
+            if candidates:
+                new_host_sid = candidates[0]
+                game.players[new_host_sid]['is_host'] = True
+                game.broadcast_message(f"{game.players[new_host_sid]['nickname']} jest nowym hostem.")
+
+        # Check active players count for game continuation
+        active_count = len([p for p in game.players.values() if not p.get('is_spectator')])
+
+        if active_count < 2 and game.state != 'LOBBY':
              game.state = 'LOBBY'
              game.stop_timer()
+             game.broadcast_message("Zbyt mało graczy. Powrót do lobby.")
         elif game.czar_sid == sid:
-             game.start_round()
+             # Czar left - restart round logic or wait?
+             # For simplicity, restart round if enough players
+             if active_count >= 2:
+                 game.start_round()
+             else:
+                 game.state = 'LOBBY'
+                 game.stop_timer()
 
         game.broadcast_state()
 
