@@ -220,10 +220,17 @@ function updatePlayerList(players) {
 
         const details = document.createElement('div');
         details.className = 'player-details';
-        details.innerHTML = `
-            <div class="p-nick">${p.nickname} ${p.nickname === myNickname ? '(Ty)' : ''}</div>
-            <div class="p-score">${p.score} pkt</div>
-        `;
+
+        const pNick = document.createElement('div');
+        pNick.className = 'p-nick';
+        pNick.textContent = `${p.nickname} ${p.nickname === myNickname ? '(Ty)' : ''}`;
+
+        const pScore = document.createElement('div');
+        pScore.className = 'p-score';
+        pScore.textContent = `${p.score} pkt`;
+
+        details.appendChild(pNick);
+        details.appendChild(pScore);
 
         li.appendChild(avatar);
         li.appendChild(details);
@@ -278,6 +285,17 @@ function updateBlackCard(cardData) {
     soundManager.playDeal();
 
     gsap.fromTo(card, { rotateY: 90, opacity: 0 }, { rotateY: 0, opacity: 1, duration: 0.8, ease: "back.out(1.2)" });
+
+    // Spotlight Effect for Black Card
+    card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.background = `radial-gradient(circle at ${x}px ${y}px, #333, #000)`;
+    });
+    card.addEventListener('mouseleave', () => {
+        card.style.background = '#000';
+    });
 }
 
 // Aktualizacja kart na stole
@@ -427,21 +445,27 @@ function addTiltEffect(element) {
     });
 }
 
-// Efekt Konfetti
+// Efekt Konfetti (Czarno-Białe dla klimatu CAH)
 function fireConfetti() {
-    const colors = ['#f00', '#0f0', '#00f', '#ff0', '#f0f', '#0ff'];
-    for(let i=0; i<100; i++) {
+    const colors = ['#fff', '#000', '#888'];
+    for(let i=0; i<150; i++) {
         const p = document.createElement('div');
-        p.style.cssText = `position:fixed;top:50%;left:50%;width:8px;height:8px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:50%;pointer-events:none;z-index:9999;`;
+        // Random square or circle
+        const isSquare = Math.random() > 0.5;
+        const radius = isSquare ? '0%' : '50%';
+        p.style.cssText = `position:fixed;top:50%;left:50%;width:10px;height:10px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${radius};pointer-events:none;z-index:9999;`;
         document.body.appendChild(p);
+
         const angle = Math.random() * Math.PI * 2;
-        const dist = 100 + Math.random() * 400;
+        const velocity = 200 + Math.random() * 500;
+
         gsap.to(p, {
-            x: Math.cos(angle) * dist,
-            y: Math.sin(angle) * dist,
+            x: Math.cos(angle) * velocity,
+            y: Math.sin(angle) * velocity,
+            rotation: Math.random() * 720,
             opacity: 0,
-            duration: 1 + Math.random(),
-            ease: "power2.out",
+            duration: 1.5 + Math.random(),
+            ease: "power4.out",
             onComplete: () => p.remove()
         });
     }
@@ -463,7 +487,5 @@ function showGameOver(winner) {
     fireConfetti();
 }
 
-// Inicjalizacja tła (placeholder pod przyszłe efekty)
-function initBackgroundAnimation() {
-    // Tło jest obsługiwane przez CSS
-}
+// Inicjalizacja tła - wywołuje funkcję z background.js
+// function initBackgroundAnimation() is defined in background.js and attached to window

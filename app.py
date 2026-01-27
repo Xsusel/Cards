@@ -4,12 +4,13 @@ import json
 import random
 import eventlet
 import time
+import os
 
 # Monkey patch for eventlet timer
 eventlet.monkey_patch()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'super_tajny_klucz'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'super_tajny_klucz')
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 # Load cards
