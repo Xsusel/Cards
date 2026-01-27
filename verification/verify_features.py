@@ -6,6 +6,10 @@ def run(playwright):
     context = browser.new_context()
     page = context.new_page()
 
+    # Capture console logs
+    page.on("console", lambda msg: print(f"CONSOLE: {msg.text}"))
+    page.on("pageerror", lambda err: print(f"PAGE ERROR: {err}"))
+
     # 1. Login as Host
     page.goto("http://localhost:3000")
     page.fill("#nickname", "HostPlayer")
@@ -61,7 +65,18 @@ def run(playwright):
     page.screenshot(path="verification/chat_window.png")
     print("Verified Chat.")
 
-    # 4. Pause Game
+    # 4. Start Game (needed to see host controls)
+    page.click("#start-btn")
+    # Wait for game to start (state change)
+    page.wait_for_timeout(1000)
+
+    # 5. Pause Game
+    print("Checking Host Controls visibility...")
+    is_host = page.evaluate("window.isHost")
+    print(f"Window isHost: {is_host}")
+
+    page.screenshot(path="verification/pre_pause.png")
+
     page.click("#pause-btn")
     # Verify Overlay and Resume Button
     overlay = page.locator("#pause-overlay")
