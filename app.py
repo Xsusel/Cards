@@ -227,6 +227,13 @@ def on_select_winner(data):
         winner_nick = game.players[winner_sid]['nickname']
         game.broadcast_message(f"{winner_nick} wygrywa rundę!")
 
+        # Sprawdź warunek końca gry (np. 5 punktów)
+        if game.players[winner_sid]['score'] >= 5:
+            game.broadcast_message(f"Gracz {winner_nick} wygrał całą grę!")
+            socketio.emit('game_over', {'winner': winner_nick})
+            game.state = 'LOBBY' # Nie resetujemy od razu, czekamy na restart
+            return
+
         # Opóźnienie przed kolejną rundą (obsłużone timeoutem po stronie klienta lub serwera)
         # Tu od razu nowa runda dla uproszczenia, w JS można dać timeout
         socketio.sleep(3)
