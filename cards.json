@@ -799,6 +799,18 @@
     {
       "text": "Co jest najgorszą rzeczą, jaką można zrobić z ogniem?",
       "pick": 1
+    },
+    {
+      "text": "_____ + _____ = Mój wymarzony weekend.",
+      "pick": 2
+    },
+    {
+      "text": "Co łączy _____ i _____?",
+      "pick": 2
+    },
+    {
+      "text": "Najlepsze połączenie to _____ oraz _____.",
+      "pick": 2
     }
   ],
   "whiteCards": [
@@ -1835,6 +1847,7 @@
     "Olej silnikowy.",
     "Płyn hamulcowy.",
     "Płyn chłodniczy.",
-    "Elektrolit z akumulatora."
+    "Elektrolit z akumulatora.",
+    "Twój stary."
   ]
 }

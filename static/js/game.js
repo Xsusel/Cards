@@ -775,6 +775,11 @@ function updateHand(hand) {
         const card = document.createElement('div');
         card.className = 'card white-card';
 
+        // Check for Joker Cards
+        if (cardText === 'Twoja stara.' || cardText === 'Twój stary.') {
+            card.classList.add('joker-card');
+        }
+
         if (cardText === '<<BLANK>>') {
             card.textContent = "PUSTA KARTA";
             card.style.fontStyle = "italic";
