@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karty Przeciwko Ludzkości - Klon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Socket.IO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+</head>
+<body>
+    <!-- Ekran logowania -->
+    <div id="login-screen">
+        <div class="login-container">
+            <h1>DOŁĄCZ DO GRY</h1>
+            <input type="text" id="nickname" placeholder="Twój Nick" maxlength="15">
+            <input type="password" id="password" placeholder="Hasło Sesji">
+            <button id="join-btn">WEJDŹ</button>
+            <p id="login-error" class="error-msg"></p>
+        </div>
+    </div>
+
+    <!-- Obszar gry -->
+    <div id="game-area" class="hidden">
+        <div class="game-header">
+            <div class="status-panel">
+                <h2 id="game-status">Oczekiwanie na graczy...</h2>
+                <div id="czar-display">Car: <span id="czar-name">-</span></div>
+            </div>
+            <button id="start-btn" class="hidden">ROZPOCZNIJ GRĘ</button>
+        </div>
+
+        <div class="game-main">
+            <!-- Stół z kartami -->
+            <div id="table-area">
+                <div id="black-card-container">
+                    <!-- Tu trafi czarna karta -->
+                </div>
+                <div id="played-cards-container">
+                    <!-- Tu trafią zagrane białe karty -->
+                </div>
+            </div>
+
+            <!-- Lista graczy / Wyniki -->
+            <div id="sidebar">
+                <h3>TABELA WYNIKÓW</h3>
+                <ul id="players-list">
+                    <!-- Lista dynamiczna -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- Ręka gracza -->
+        <div id="hand-section">
+            <div id="hand-container">
+                <!-- Karty gracza -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Powiadomienia -->
+    <div id="toast-container"></div>
+
+    <script src="/static/js/game.js"></script>
+</body>
+</html>

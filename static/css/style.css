@@ -1,0 +1,326 @@
+:root {
+    --bg-light: #f7f5f4;
+    --card-black: #000000;
+    --card-white: #ffffff;
+    --text-dark: #2c2c2c;
+    --text-light: #ffffff;
+    --accent: #e0e0e0;
+    --font-main: 'Ubuntu', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-main);
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Login Screen */
+#login-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--card-black);
+    color: var(--text-light);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.login-container {
+    background: var(--card-white);
+    color: var(--text-dark);
+    padding: 3rem;
+    border-radius: 15px;
+    text-align: center;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.login-container h1 {
+    margin-bottom: 2rem;
+    font-weight: 700;
+}
+
+.login-container input {
+    width: 100%;
+    padding: 15px;
+    margin-bottom: 15px;
+    border: 2px solid #000;
+    border-radius: 8px;
+    font-family: var(--font-main);
+    font-size: 1rem;
+}
+
+.login-container button {
+    width: 100%;
+    padding: 15px;
+    background: var(--card-black);
+    color: var(--text-light);
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.login-container button:active {
+    transform: scale(0.98);
+}
+
+.error-msg {
+    color: red;
+    margin-top: 1rem;
+    font-weight: bold;
+}
+
+/* Game Area */
+#game-area {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+
+.game-header {
+    background: var(--card-white);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.status-panel h2 {
+    font-size: 1.2rem;
+}
+
+#start-btn {
+    padding: 10px 20px;
+    background: var(--card-black);
+    color: var(--text-light);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.game-main {
+    flex: 1;
+    display: flex;
+    padding: 2rem;
+    gap: 2rem;
+    overflow: hidden;
+}
+
+/* Table Area */
+#table-area {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    overflow-y: auto;
+}
+
+#black-card-container {
+    min-height: 250px;
+    display: flex;
+    justify-content: center;
+}
+
+#played-cards-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    width: 100%;
+}
+
+/* Sidebar */
+#sidebar {
+    flex: 1;
+    background: var(--card-white);
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    max-width: 300px;
+}
+
+#players-list {
+    list-style: none;
+    margin-top: 1rem;
+}
+
+#players-list li {
+    padding: 0.8rem;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.czar-badge {
+    background: var(--card-black);
+    color: var(--text-light);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    margin-left: 5px;
+}
+
+/* Cards */
+.card {
+    width: 160px;
+    height: 220px;
+    padding: 1.2rem;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1.4;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+    position: relative;
+    transition: transform 0.2s;
+}
+
+.black-card {
+    background-color: var(--card-black);
+    color: var(--text-light);
+    width: 200px; /* Slightly larger */
+    height: 280px;
+    font-size: 1.2rem;
+}
+
+.white-card {
+    background-color: var(--card-white);
+    color: var(--text-dark);
+    border: 1px solid #ddd;
+    cursor: pointer;
+}
+
+.white-card:hover {
+    transform: translateY(-10px) scale(1.05);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    z-index: 10;
+}
+
+.card.selected {
+    border: 3px solid #000;
+    transform: translateY(-15px);
+}
+
+.card.hidden-card {
+    background: var(--card-white);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.card.hidden-card::after {
+    content: "CAH";
+    font-size: 2rem;
+    font-weight: 900;
+    color: #eee;
+    transform: rotate(-45deg);
+}
+
+.card.winner {
+    border: 4px solid #2ecc71;
+    box-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
+}
+
+/* Hand Section */
+#hand-section {
+    background: #e5e5e5;
+    padding: 1rem;
+    height: 260px; /* Fixed height for hand */
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.05);
+}
+
+#hand-container {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 100%;
+    align-items: center;
+    overflow-x: auto;
+    padding-bottom: 10px; /* Scrollbar space */
+}
+
+/* Toast */
+#toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast {
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    animation: fadeIn 0.3s, fadeOut 0.3s 2.7s forwards;
+}
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+/* Mobile RWD */
+@media (max-width: 768px) {
+    .game-main {
+        flex-direction: column;
+        padding: 1rem;
+    }
+
+    #sidebar {
+        max-width: 100%;
+        order: -1; /* Scoreboard on top or hidden in menu? Let's keep it visible but small */
+        padding: 0.5rem;
+    }
+
+    #table-area {
+        overflow: visible; /* Let it scroll with page if needed */
+    }
+
+    .card {
+        width: 130px;
+        height: 180px;
+        font-size: 0.9rem;
+    }
+
+    .black-card {
+        width: 150px;
+        height: 210px;
+    }
+
+    #hand-container {
+        justify-content: flex-start; /* Align left to allow scroll */
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+}
