@@ -40,13 +40,29 @@ class Game:
         self.settings = {
             'max_score': 8,
             'timer_duration': 60,
-            'blank_cards': 0
+            'blank_cards': 0,
+            'democracy_mode': False,
+            'joker_count': 2,
+            'custom_cards_allowed': False
         }
         self.initial_rerolls = 3
+        self.round_history = []
+        self.votes = {}
 
     def reset_game(self):
+        self.round_history = []
         self.black_deck = CARDS['blackCards'][:]
-        self.white_deck = CARDS['whiteCards'][:]
+
+        # Filter original jokers
+        original_jokers = ['Twoja stara.', 'Twój stary.']
+        self.white_deck = [c for c in CARDS['whiteCards'] if c not in original_jokers]
+
+        # Inject new jokers
+        joker_count = self.settings.get('joker_count', 2)
+        for i in range(joker_count):
+            # Alternating
+            text = 'Twoja stara.' if i % 2 == 0 else 'Twój stary.'
+            self.white_deck.append(text)
 
         # Add blank cards
         blank_count = self.settings.get('blank_cards', 0)
@@ -76,6 +92,12 @@ class Game:
             self.settings['timer_duration'] = int(new_settings['timer_duration'])
         if 'blank_cards' in new_settings:
             self.settings['blank_cards'] = int(new_settings['blank_cards'])
+        if 'democracy_mode' in new_settings:
+            self.settings['democracy_mode'] = bool(new_settings['democracy_mode'])
+        if 'joker_count' in new_settings:
+            self.settings['joker_count'] = int(new_settings['joker_count'])
+        if 'custom_cards_allowed' in new_settings:
+            self.settings['custom_cards_allowed'] = bool(new_settings['custom_cards_allowed'])
         socketio.emit('settings_updated', self.settings)
 
     def deal_cards(self, sid, count=1):
@@ -226,10 +248,40 @@ class Game:
         if len(self.table_cards) >= players_needed:
             self.state = 'JUDGING'
             self.stop_timer()
+
+            if self.settings.get('democracy_mode', False):
+                self.votes = {}
+                self.broadcast_message("Tryb Demokracja: Głosowanie rozpoczęte!")
+
             random.shuffle(self.table_cards)
             self.broadcast_state()
 
         return True
+
+    def resolve_round(self, winner_sid):
+        if winner_sid not in self.players: return
+
+        self.players[winner_sid]['score'] += 1
+        winner_nick = self.players[winner_sid]['nickname']
+        self.broadcast_message(f"{winner_nick} wygrywa rundę!")
+
+        # Record history for Hall of Fame
+        winning_entry = next((e for e in self.table_cards if e['sid'] == winner_sid), None)
+        if winning_entry:
+            self.round_history.append({
+                'black': self.current_black_card,
+                'white': winning_entry['cards'],
+                'winner': winner_nick
+            })
+
+        if self.players[winner_sid]['score'] >= self.settings['max_score']:
+            self.broadcast_message(f"Gracz {winner_nick} wygrał grę!")
+            socketio.emit('game_over', {'winner': winner_nick, 'history': self.round_history})
+            self.state = 'LOBBY'
+            return
+
+        socketio.sleep(3)
+        self.start_round()
 
     def broadcast_state(self):
         public_players = []
@@ -385,6 +437,68 @@ def on_update_settings(data):
     game.update_settings(data)
     game.broadcast_message("Ustawienia gry zostały zmienione.")
 
+@socketio.on('add_custom_cards')
+def on_add_custom_cards(data):
+    sid = request.sid
+    # Only host can add cards or if allowed by settings?
+    # User said "Option to Enable", so if enabled, maybe anyone can?
+    # But usually it's a host feature.
+    # Let's restrict to Host if "custom_cards_allowed" is NOT set,
+    # OR if it IS set, maybe anyone can?
+    # Let's stick to: Host can always add (feature 2), but the button visibility is controlled?
+    # Or "custom_cards_allowed" enables the feature for EVERYONE?
+    # "2 też ma być opcja do włączenia" -> "Option to turn on".
+    # I'll implement: Host Only, and "custom_cards_allowed" toggle controls if the button is available/feature active.
+
+    if sid not in game.players: return
+
+    # Check permission: Host only + Feature Enabled
+    # Or just Feature Enabled?
+    # If it's a "Toggle to enable the feature", typically means enabling the logic.
+    if not game.settings.get('custom_cards_allowed', False):
+         emit('error', {'message': 'Dodawanie kart jest wyłączone.'})
+         return
+
+    # Check host for security, unless we want to allow players to submit?
+    # Given the context of "Host adds cards", I'll require Host.
+    if not game.players[sid].get('is_host', False):
+        emit('error', {'message': 'Tylko host może dodawać karty.'})
+        return
+
+    new_black = data.get('black_cards', [])
+    new_white = data.get('white_cards', [])
+
+    if not new_black and not new_white:
+        return
+
+    # Process Black Cards
+    count_b = 0
+    for text in new_black:
+        text = text.strip()
+        if text:
+            # Simple parsing for pick count? defaulting to 1
+            pick = 1
+            if text.count('_____') >= 2:
+                pick = 2 # Basic heuristic
+            if 'pick' in text: # Advanced user override? Nah.
+                pass
+
+            game.black_deck.append({'text': text, 'pick': pick})
+            count_b += 1
+
+    # Process White Cards
+    count_w = 0
+    for text in new_white:
+        text = text.strip()
+        if text:
+            game.white_deck.append(text)
+            count_w += 1
+
+    if count_b > 0 or count_w > 0:
+        random.shuffle(game.black_deck)
+        random.shuffle(game.white_deck)
+        game.broadcast_message(f"Dodano {count_b} czarnych i {count_w} białych kart!")
+
 @socketio.on('start_game')
 def on_start():
     # Only count active players for start condition
@@ -485,10 +599,63 @@ def on_play_cards(data):
     if not success:
          emit('error', {'message': 'Błąd zagrywania kart.'})
 
+@socketio.on('cast_vote')
+def on_cast_vote(data):
+    sid = request.sid
+    if game.state != 'JUDGING' or not game.settings.get('democracy_mode', False):
+        return
+
+    # Check if player already voted
+    if sid in game.votes:
+        return
+
+    target_idx = data.get('target_index')
+    if target_idx is None or target_idx < 0 or target_idx >= len(game.table_cards):
+        return
+
+    target_entry = game.table_cards[target_idx]
+
+    # Prevent self-voting
+    if target_entry['sid'] == sid:
+        emit('error', {'message': 'Nie możesz głosować na siebie!'})
+        return
+
+    game.votes[sid] = target_idx
+    emit('vote_confirmed', {'target_index': target_idx})
+
+    # Check completion
+    active_players = [p for p in game.players.values() if not p.get('is_spectator', False)]
+    # All active players vote
+    if len(game.votes) >= len(active_players):
+        # Tally votes
+        vote_counts = {}
+        for v in game.votes.values():
+            vote_counts[v] = vote_counts.get(v, 0) + 1
+
+        # Find max
+        max_votes = -1
+        winners = []
+        for idx, count in vote_counts.items():
+            if count > max_votes:
+                max_votes = count
+                winners = [idx]
+            elif count == max_votes:
+                winners.append(idx)
+
+        # Tie-break (Random)
+        winner_idx = random.choice(winners)
+        winner_sid = game.table_cards[winner_idx]['sid']
+
+        game.resolve_round(winner_sid)
+
+
 @socketio.on('select_winner')
 def on_select_winner(data):
     sid = request.sid
     if game.state != 'JUDGING':
+        return
+    # In democracy mode, Czar selection is disabled
+    if game.settings.get('democracy_mode', False):
         return
     if not game.players[sid]['is_czar']:
         return
@@ -502,18 +669,7 @@ def on_select_winner(data):
             break
 
     if winner_sid:
-        game.players[winner_sid]['score'] += 1
-        winner_nick = game.players[winner_sid]['nickname']
-        game.broadcast_message(f"{winner_nick} wygrywa rundę!")
-
-        if game.players[winner_sid]['score'] >= game.settings['max_score']:
-            game.broadcast_message(f"Gracz {winner_nick} wygrał grę!")
-            socketio.emit('game_over', {'winner': winner_nick})
-            game.state = 'LOBBY'
-            return
-
-        socketio.sleep(3)
-        game.start_round()
+        game.resolve_round(winner_sid)
 
 @socketio.on('kick_player')
 def on_kick_player(data):

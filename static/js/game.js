@@ -36,7 +36,12 @@ const setTimer = document.getElementById('set-timer');
 // Ensure element exists before access
 const infiniteTimerCheck = document.getElementById('infinite-timer-check');
 const setBlankCards = document.getElementById('set-blank-cards');
+const setDemocracy = document.getElementById('set-democracy');
+const setCustomCards = document.getElementById('set-custom-cards');
+const setJokers = document.getElementById('set-jokers');
 const volumeSlider = document.getElementById('volume-slider');
+const hofOverlay = document.getElementById('hof-overlay');
+const hofSlideContainer = document.getElementById('hof-slide-container');
 const volumeVal = document.getElementById('volume-val');
 
 const statBlackCount = document.getElementById('stat-black-count');
@@ -49,12 +54,20 @@ const stopBtn = document.getElementById('stop-btn');
 const pauseOverlay = document.getElementById('pause-overlay');
 const resumeOverlayBtn = document.getElementById('resume-overlay-btn');
 const copyLinkBtn = document.getElementById('copy-link-btn');
+const addCardsBtn = document.getElementById('add-cards-btn');
 
 // Blank Modal
 const blankModal = document.getElementById('blank-card-modal');
 const blankInput = document.getElementById('blank-card-input');
 const confirmBlankBtn = document.getElementById('confirm-blank-btn');
 const cancelBlankBtn = document.getElementById('cancel-blank-btn');
+
+// Add Cards Modal
+const addCardsModal = document.getElementById('add-cards-modal');
+const customBlackInput = document.getElementById('custom-black-input');
+const customWhiteInput = document.getElementById('custom-white-input');
+const confirmAddCardsBtn = document.getElementById('confirm-add-cards-btn');
+const cancelAddCardsBtn = document.getElementById('cancel-add-cards-btn');
 
 // Chat Elements
 const chatToggleBtn = document.getElementById('chat-toggle-btn');
@@ -130,12 +143,18 @@ if(saveSettingsBtn) {
          if(infiniteTimerCheck.checked) timer = 0;
 
          const blanks = parseInt(setBlankCards.value);
+         const jokers = parseInt(setJokers.value);
+         const democracy = setDemocracy.checked;
+         const customCards = setCustomCards.checked;
 
          if(maxScore && timer !== undefined) {
             socket.emit('update_settings', {
                 max_score: maxScore,
                 timer_duration: timer,
-                blank_cards: blanks
+                blank_cards: blanks,
+                joker_count: jokers,
+                democracy_mode: democracy,
+                custom_cards_allowed: customCards
             });
             settingsModal.classList.add('hidden');
             soundManager.playClick();
@@ -176,6 +195,40 @@ if(copyLinkBtn) {
             console.error('Failed to copy: ', err);
             prompt("Skopiuj link ręcznie:", url);
         });
+    });
+}
+
+// Add Custom Cards Logic
+if(addCardsBtn) {
+    addCardsBtn.addEventListener('click', () => {
+        soundManager.playClick();
+        addCardsModal.classList.remove('hidden');
+    });
+}
+
+if(cancelAddCardsBtn) {
+    cancelAddCardsBtn.addEventListener('click', () => {
+        soundManager.playClick();
+        addCardsModal.classList.add('hidden');
+        customBlackInput.value = '';
+        customWhiteInput.value = '';
+    });
+}
+
+if(confirmAddCardsBtn) {
+    confirmAddCardsBtn.addEventListener('click', () => {
+        soundManager.playClick();
+        const blacks = customBlackInput.value.split('\n').filter(t => t.trim() !== '');
+        const whites = customWhiteInput.value.split('\n').filter(t => t.trim() !== '');
+
+        if(blacks.length > 0 || whites.length > 0) {
+            socket.emit('add_custom_cards', { black_cards: blacks, white_cards: whites });
+            showToast('Wysyłanie kart...');
+        }
+
+        addCardsModal.classList.add('hidden');
+        customBlackInput.value = '';
+        customWhiteInput.value = '';
     });
 }
 
@@ -414,9 +467,24 @@ socket.on('timer_update', (data) => {
 });
 
 // Koniec gry
+socket.on('vote_confirmed', (data) => {
+    soundManager.playClick();
+    showToast("Głos oddany!");
+    // Highlight the voted card?
+    const group = document.getElementById(`card-group-${data.target_index}`);
+    if(group) {
+        group.style.border = "3px solid #f1c40f";
+        group.style.boxShadow = "0 0 15px #f1c40f";
+    }
+});
+
 socket.on('game_over', (data) => {
     soundManager.playWin();
-    showGameOver(data.winner);
+    if(data.history && data.history.length > 0) {
+        showHallOfFame(data.history, data.winner);
+    } else {
+        showGameOver(data.winner);
+    }
 });
 
 // Aktualizacja ustawień
@@ -441,6 +509,20 @@ window.updateSettingsUI = (settings) => {
             }
         }
         if(settings.blank_cards !== undefined && setBlankCards) setBlankCards.value = settings.blank_cards;
+        if(settings.joker_count !== undefined && setJokers) setJokers.value = settings.joker_count;
+        if(settings.democracy_mode !== undefined && setDemocracy) setDemocracy.checked = settings.democracy_mode;
+        if(settings.custom_cards_allowed !== undefined && setCustomCards) setCustomCards.checked = settings.custom_cards_allowed;
+
+        // Toggle Add Cards button visibility
+        if(addCardsBtn) {
+            // Visible if Host AND Allowed
+            if(window.isHost && settings.custom_cards_allowed) {
+                addCardsBtn.classList.remove('hidden');
+            } else {
+                addCardsBtn.classList.add('hidden');
+            }
+        }
+
     } catch(e) {
         console.error("Error updating settings UI:", e);
     }
@@ -483,6 +565,9 @@ function handleGameUpdate(data) {
     if (window.updateSettingsUI && data.settings) {
         window.updateSettingsUI(data.settings);
     }
+
+    // Update local isHost variable first
+    if(window.updateSettingsUI) updateStatusPanel(data);
 
     // Pause State
     if(data.paused) {
@@ -631,7 +716,13 @@ function updateStatusPanel(data) {
     if (isSpectator) statusText = "TRYB OBSERWATORA";
     else if (data.state === 'LOBBY') statusText = 'Oczekiwanie...';
     else if (data.state === 'SELECTION') statusText = isCzar ? 'Jesteś Carem. Czekaj.' : `Wybierz ${pickAmount} kart(y)!`;
-    else if (data.state === 'JUDGING') statusText = isCzar ? 'Wybierz zwycięzcę!' : 'Car wybiera...';
+    else if (data.state === 'JUDGING') {
+        if(data.settings && data.settings.democracy_mode) {
+             statusText = 'GŁOSOWANIE! Wybierz najlepszą kartę.';
+        } else {
+             statusText = isCzar ? 'Wybierz zwycięzcę!' : 'Car wybiera...';
+        }
+    }
 
     gameStatus.textContent = statusText;
 
@@ -794,14 +885,28 @@ function updateTableCards(tableCards) {
             groupDiv.appendChild(cardDiv);
         });
 
-        if (gameState === 'JUDGING' && isCzar) {
-            groupDiv.style.cursor = 'pointer';
-            groupDiv.onclick = () => selectWinner(entry.cards);
-            groupDiv.title = "Wybierz ten zestaw";
+        // Democracy Mode click logic
+        const isDemocracy = gameStatus.textContent.includes('GŁOSOWANIE');
+
+        if (gameState === 'JUDGING') {
+            if (isDemocracy) {
+                // Democracy: Everyone can click except owner
+                groupDiv.style.cursor = 'pointer';
+                groupDiv.onclick = () => {
+                     if(confirm("Zagłosować na tę kartę?")) {
+                         socket.emit('cast_vote', { target_index: index });
+                     }
+                };
+                groupDiv.title = "Zagłosuj";
+            } else if (isCzar) {
+                groupDiv.style.cursor = 'pointer';
+                groupDiv.onclick = () => selectWinner(entry.cards);
+                groupDiv.title = "Wybierz ten zestaw";
+            }
         }
 
-        // Add Reactions Overlay if not Czar and Judging
-        if (gameState === 'JUDGING' && !isCzar && entry.revealed) {
+        // Add Reactions Overlay if not Czar and Judging (AND not Democracy)
+        if (gameState === 'JUDGING' && !isCzar && entry.revealed && !isDemocracy) {
             const reactionOverlay = document.createElement('div');
             reactionOverlay.className = 'reaction-overlay';
 
@@ -1037,6 +1142,8 @@ function fireConfetti() {
 
 // Modal Koniec Gry
 function showGameOver(winner) {
+    if(document.getElementById('hof-overlay')) document.getElementById('hof-overlay').classList.add('hidden');
+
     gameOverModal = document.createElement('div');
     gameOverModal.className = 'modal-overlay';
 
@@ -1057,7 +1164,11 @@ function showGameOver(winner) {
     const btn = document.createElement('button');
     btn.className = 'modal-btn';
     btn.textContent = 'REWANŻ';
-    btn.onclick = () => socket.emit('start_game');
+    btn.onclick = () => {
+         socket.emit('start_game');
+         if(gameOverModal) gameOverModal.remove();
+         gameOverModal = null;
+    };
 
     content.appendChild(h1);
     content.appendChild(p);
@@ -1067,4 +1178,92 @@ function showGameOver(winner) {
     gameOverModal.appendChild(content);
     document.body.appendChild(gameOverModal);
     fireConfetti();
+}
+
+function showHallOfFame(history, winner) {
+    const overlay = document.getElementById('hof-overlay');
+    const container = document.getElementById('hof-slide-container');
+    if(!overlay || !container) {
+        showGameOver(winner);
+        return;
+    }
+
+    overlay.classList.remove('hidden');
+    container.innerHTML = '';
+
+    // Create slides
+    history.forEach((round, i) => {
+        const slide = document.createElement('div');
+        slide.className = 'hof-slide';
+        slide.style.display = 'none';
+        slide.style.flexDirection = 'column';
+        slide.style.alignItems = 'center';
+        slide.style.gap = '20px';
+
+        const blackCard = document.createElement('div');
+        blackCard.className = 'card black-card';
+        if(round.black && round.black.text) {
+             const parts = round.black.text.split('_____');
+             blackCard.innerHTML = '';
+             parts.forEach((part, idx) => {
+                 blackCard.appendChild(document.createTextNode(part));
+                 if (idx < parts.length - 1) {
+                     const span = document.createElement('span');
+                     span.textContent = '__________';
+                     blackCard.appendChild(span);
+                 }
+             });
+        } else {
+             blackCard.textContent = "Błąd karty";
+        }
+        blackCard.style.fontSize = '1.2rem';
+
+        const whiteContainer = document.createElement('div');
+        whiteContainer.style.display = 'flex';
+        whiteContainer.style.gap = '10px';
+
+        round.white.forEach(txt => {
+            const wc = document.createElement('div');
+            wc.className = 'card white-card';
+            wc.textContent = txt;
+            wc.style.fontSize = '1rem';
+            whiteContainer.appendChild(wc);
+        });
+
+        const winnerLabel = document.createElement('div');
+        winnerLabel.textContent = `Wygrał: ${round.winner}`;
+        winnerLabel.style.fontSize = '1.5rem';
+        winnerLabel.style.color = '#fff';
+        winnerLabel.style.marginTop = '20px';
+
+        slide.appendChild(blackCard);
+        slide.appendChild(whiteContainer);
+        slide.appendChild(winnerLabel);
+        container.appendChild(slide);
+    });
+
+    // Play Slideshow
+    const slides = container.children;
+    let current = 0;
+
+    function nextSlide() {
+        if(current >= slides.length) {
+            setTimeout(() => showGameOver(winner), 1000);
+            return;
+        }
+
+        Array.from(slides).forEach(s => s.style.display = 'none');
+        slides[current].style.display = 'flex';
+
+        gsap.fromTo(slides[current],
+            { opacity: 0, scale: 0.8 },
+            { opacity: 1, scale: 1, duration: 0.5, ease: "back.out" }
+        );
+
+        soundManager.playPop();
+        current++;
+        setTimeout(nextSlide, 4000); // 4 seconds per slide
+    }
+
+    nextSlide();
 }
