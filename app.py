@@ -334,6 +334,17 @@ def on_reaction(data):
     # data: {type: 'up'|'down', target_id: int} (target_id is index in table_cards)
     socketio.emit('reaction_received', data)
 
+@socketio.on('send_global_reaction')
+def on_global_reaction(data):
+    sid = request.sid
+    if sid not in game.players: return
+
+    emoji = data.get('emoji')
+    if not emoji: return
+
+    nickname = game.players[sid]['nickname']
+    socketio.emit('global_reaction_received', {'emoji': emoji, 'nickname': nickname})
+
 @socketio.on('send_chat')
 def on_send_chat(data):
     sid = request.sid

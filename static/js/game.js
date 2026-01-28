@@ -77,6 +77,8 @@ const chatMessages = document.getElementById('chat-messages');
 const chatInput = document.getElementById('chat-input');
 const chatSendBtn = document.getElementById('chat-send-btn');
 
+const reactionBar = document.getElementById('reaction-bar');
+
 let gameOverModal = null;
 
 // Lokalny stan gry
@@ -365,7 +367,54 @@ socket.on('join_success', (data) => {
 
     // Init Chat UI
     if(chatToggleBtn) chatToggleBtn.classList.remove('hidden');
+    if(reactionBar) reactionBar.classList.remove('hidden');
 });
+
+// --- REAKCJE GLOBALNE ---
+if (reactionBar) {
+    const btns = reactionBar.querySelectorAll('.reaction-btn');
+    btns.forEach(btn => {
+        btn.addEventListener('click', () => {
+             const emoji = btn.getAttribute('data-emoji');
+             socket.emit('send_global_reaction', { emoji: emoji });
+             spawnEmojiRain(emoji, true);
+        });
+    });
+}
+
+socket.on('global_reaction_received', (data) => {
+    if(data.nickname !== myNickname) {
+        spawnEmojiRain(data.emoji, false);
+    }
+});
+
+function spawnEmojiRain(emoji, isMe) {
+    const count = 10;
+
+    for(let i=0; i<count; i++) {
+        const el = document.createElement('div');
+        el.textContent = emoji;
+        el.className = 'floating-emoji';
+
+        // Random start X
+        const startX = Math.random() * window.innerWidth;
+        el.style.left = `${startX}px`;
+
+        document.body.appendChild(el);
+
+        gsap.to(el, {
+            y: -window.innerHeight - 100,
+            x: startX + (Math.random() - 0.5) * 200, // drift
+            rotation: Math.random() * 360,
+            duration: 3 + Math.random() * 2,
+            ease: "power1.out",
+            onComplete: () => el.remove()
+        });
+    }
+
+    // Play subtle sound
+    if(!isMe) soundManager.playTone(300 + Math.random()*200, 'sine', 0.05, 0.05);
+}
 
 // --- CZAT ---
 if(chatToggleBtn) {
@@ -461,8 +510,11 @@ socket.on('timer_update', (data) => {
     if (data.time <= 10) {
         timerDisplay.style.color = 'red';
         if (data.time > 0) soundManager.playTone(800, 'square', 0.05, 0.05); // Tykanie
+        if (window.setBackgroundState) window.setBackgroundState('urgent');
     } else {
         timerDisplay.style.color = 'var(--text-dark)';
+        // Only reset to normal if we are in SELECTION (avoid overriding Judging state if timer persists)
+        if (window.setBackgroundState && gameState === 'SELECTION') window.setBackgroundState('normal');
     }
 });
 
@@ -544,6 +596,18 @@ function handleGameUpdate(data) {
     }
 
     gameState = data.state;
+
+    // Background State Logic
+    if(window.setBackgroundState) {
+        if (gameState === 'JUDGING') {
+            window.setBackgroundState('judging');
+        } else if (gameState === 'LOBBY') {
+            window.setBackgroundState('normal');
+        } else if (gameState === 'SELECTION') {
+             // Reset to normal initially, timer will override if needed
+            window.setBackgroundState('normal');
+        }
+    }
 
     // Stats
     if(data.total_black) statBlackCount.textContent = data.total_black;
@@ -734,14 +798,57 @@ function updateStatusPanel(data) {
     }
 }
 
-// Generowanie koloru avatara na podstawie nicku
-function generateAvatar(seed) {
+// Generowanie robota-avatara SVG na podstawie nicku
+function generateSvgAvatar(seed) {
     let hash = 0;
     for (let i = 0; i < seed.length; i++) {
         hash = seed.charCodeAt(i) + ((hash << 5) - hash);
     }
+
     const hue = Math.abs(hash % 360);
-    return `hsl(${hue}, 70%, 80%)`;
+    const sat = 60 + (Math.abs(hash) % 40);
+    const light = 50 + (Math.abs(hash >> 2) % 30);
+    const color = `hsl(${hue}, ${sat}%, ${light}%)`;
+
+    // Cechy robota
+    const eyeType = Math.abs(hash >> 4) % 3;
+    const mouthType = Math.abs(hash >> 6) % 3;
+    const hasAntenna = (Math.abs(hash >> 8) % 2) === 0;
+
+    let svg = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%;">`;
+
+    // Ciało
+    svg += `<rect x="20" y="20" width="60" height="60" rx="10" fill="${color}" stroke="#333" stroke-width="3" />`;
+
+    // Antena
+    if(hasAntenna) {
+        svg += `<line x1="50" y1="20" x2="50" y2="5" stroke="#333" stroke-width="3" />`;
+        svg += `<circle cx="50" cy="5" r="4" fill="${color}" stroke="#333" stroke-width="2" />`;
+    }
+
+    // Oczy
+    if(eyeType === 0) { // Kółka
+        svg += `<circle cx="35" cy="45" r="6" fill="#fff" stroke="#333" stroke-width="2" />`;
+        svg += `<circle cx="65" cy="45" r="6" fill="#fff" stroke="#333" stroke-width="2" />`;
+    } else if (eyeType === 1) { // Kwadraty
+        svg += `<rect x="29" y="39" width="12" height="12" fill="#fff" stroke="#333" stroke-width="2" />`;
+        svg += `<rect x="59" y="39" width="12" height="12" fill="#fff" stroke="#333" stroke-width="2" />`;
+    } else { // Kreski
+        svg += `<line x1="30" y1="45" x2="42" y2="45" stroke="#333" stroke-width="3" />`;
+        svg += `<line x1="58" y1="45" x2="70" y2="45" stroke="#333" stroke-width="3" />`;
+    }
+
+    // Usta
+    if(mouthType === 0) { // Uśmiech
+        svg += `<path d="M 35 65 Q 50 75 65 65" stroke="#333" stroke-width="3" fill="none" />`;
+    } else if (mouthType === 1) { // Płaskie
+         svg += `<line x1="35" y1="70" x2="65" y2="70" stroke="#333" stroke-width="3" />`;
+    } else { // Zdziwienie
+        svg += `<circle cx="50" cy="70" r="5" fill="none" stroke="#333" stroke-width="3" />`;
+    }
+
+    svg += `</svg>`;
+    return svg;
 }
 
 // Aktualizacja listy graczy
@@ -755,8 +862,9 @@ function updatePlayerList(players) {
         // Avatar
         const avatar = document.createElement('div');
         avatar.className = 'player-avatar';
-        avatar.style.backgroundColor = generateAvatar(p.nickname);
-        avatar.textContent = p.nickname.charAt(0).toUpperCase();
+        avatar.innerHTML = generateSvgAvatar(p.nickname);
+        // avatar.style.backgroundColor = generateAvatar(p.nickname); // Removed
+        // avatar.textContent = p.nickname.charAt(0).toUpperCase(); // Removed
 
         const details = document.createElement('div');
         details.className = 'player-details';
