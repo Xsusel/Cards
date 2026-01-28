@@ -79,6 +79,10 @@ const chatSendBtn = document.getElementById('chat-send-btn');
 
 const reactionBar = document.getElementById('reaction-bar');
 
+const czarNotificationOverlay = document.getElementById('czar-notification-overlay');
+const turnInstructionOverlay = document.getElementById('turn-instruction-overlay');
+const turnInstructionText = document.getElementById('turn-instruction-text');
+
 let gameOverModal = null;
 
 // Lokalny stan gry
@@ -643,15 +647,18 @@ function handleGameUpdate(data) {
         if(pauseBtn) pauseBtn.textContent = '⏸ Pauza';
     }
 
-    // Sound Triggers
+    // Sound Triggers & Notifications
     if (gameState === 'SELECTION' && lastGameState !== 'SELECTION') {
         if (isCzar) {
             soundManager.playFanfare();
+            showNotification("ZOSTAŁEŚ CAREM", czarNotificationOverlay);
         } else {
             // Only play turn alert if not spectator
             const me = data.players.find(p => p.nickname === myNickname);
             if (me && !me.is_spectator) {
                 soundManager.playTurnAlert();
+                const instruction = pickAmount > 1 ? `WYBIERZ ${pickAmount} KARTY` : "WYBIERZ KARTĘ";
+                showNotification(instruction, turnInstructionOverlay);
             }
         }
     }
@@ -1246,6 +1253,35 @@ function fireConfetti() {
             onComplete: () => p.remove()
         });
     }
+}
+
+// Helper Notification
+function showNotification(text, element) {
+    if (!element) return;
+    const h1 = element.querySelector('h1');
+    if (h1) h1.textContent = text;
+
+    element.classList.remove('hidden');
+    // Ensure element is visible before animating
+    gsap.set(element, { opacity: 1 });
+
+    // Animate In
+    gsap.fromTo(h1,
+        { scale: 0.5, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.7)" }
+    );
+
+    // Animate Out after delay
+    gsap.to(h1, {
+        scale: 1.5,
+        opacity: 0,
+        delay: 2.5,
+        duration: 0.5,
+        onComplete: () => {
+            element.classList.add('hidden');
+            gsap.set(h1, { scale: 1, opacity: 1 }); // Reset for next time
+        }
+    });
 }
 
 // Modal Koniec Gry

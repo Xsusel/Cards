@@ -764,3 +764,43 @@ input:checked + .slider:before {
         bottom: 70px; /* Above chat toggle? */
     }
 }
+
+/* Notification Overlays (Czar / Turn Instructions) */
+#czar-notification-overlay, #turn-instruction-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none; /* Click through */
+    z-index: 500;
+    opacity: 0; /* Default state for animation */
+}
+
+/* Ensure hidden class works (display: none overrides flex) */
+#czar-notification-overlay.hidden, #turn-instruction-overlay.hidden {
+    display: none !important;
+}
+
+#czar-notification-overlay h1, #turn-instruction-overlay h1 {
+    font-size: 5rem;
+    color: var(--accent);
+    text-shadow: 0 0 20px black;
+    text-transform: uppercase;
+    text-align: center;
+    background: rgba(0,0,0,0.7);
+    padding: 2rem 4rem;
+    border-radius: 20px;
+    border: 2px solid var(--accent);
+    backdrop-filter: blur(5px);
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+    transform: scale(0.5); /* Start scale for animation */
+}
+
+/* Instruction Overlay Specifics */
+#turn-instruction-overlay h1 {
+    font-size: 4rem;
+    color: #fff;
+    border-color: #fff;
+    text-shadow: 0 0 10px #000;
+}
