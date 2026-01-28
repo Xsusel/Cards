@@ -51,6 +51,7 @@ const statWhiteCount = document.getElementById('stat-white-count');
 const hostControls = document.getElementById('host-controls');
 const pauseBtn = document.getElementById('pause-btn');
 const stopBtn = document.getElementById('stop-btn');
+const forceTimerBtn = document.getElementById('force-timer-btn');
 const pauseOverlay = document.getElementById('pause-overlay');
 const resumeOverlayBtn = document.getElementById('resume-overlay-btn');
 const copyLinkBtn = document.getElementById('copy-link-btn');
@@ -180,6 +181,15 @@ if(stopBtn) {
         if(confirm("Czy na pewno chcesz zakończyć grę i wrócić do lobby?")) {
             soundManager.playClick();
             socket.emit('stop_game_manual');
+        }
+    });
+}
+
+if(forceTimerBtn) {
+    forceTimerBtn.addEventListener('click', () => {
+        if(confirm("Czy na pewno chcesz wymusić odliczanie 10s?")) {
+            soundManager.playClick();
+            socket.emit('start_force_timer');
         }
     });
 }
@@ -393,22 +403,22 @@ socket.on('global_reaction_received', (data) => {
 });
 
 function spawnEmojiRain(emoji, isMe) {
-    const count = 10;
+    const count = 3; // Reduced for less clutter
 
     for(let i=0; i<count; i++) {
         const el = document.createElement('div');
         el.textContent = emoji;
         el.className = 'floating-emoji';
 
-        // Random start X
-        const startX = Math.random() * window.innerWidth;
+        // Right side only (85-100% width)
+        const startX = window.innerWidth * 0.85 + Math.random() * (window.innerWidth * 0.15);
         el.style.left = `${startX}px`;
 
         document.body.appendChild(el);
 
         gsap.to(el, {
             y: -window.innerHeight - 100,
-            x: startX + (Math.random() - 0.5) * 200, // drift
+            x: startX + (Math.random() - 0.5) * 50, // Reduced drift to keep them on side
             rotation: Math.random() * 360,
             duration: 3 + Math.random() * 2,
             ease: "power1.out",
