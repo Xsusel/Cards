@@ -19,6 +19,7 @@ body {
     color: var(--text-light);
     overflow: hidden;
     user-select: none;
+    transition: background-color 1s ease; /* For smooth bg transitions */
 }
 
 #bg-animation {
@@ -645,6 +646,94 @@ button {
     text-shadow: 0 0 30px rgba(231, 76, 60, 0.8) !important;
 }
 
+/* Reaction Bar & Floating Emojis */
+#reaction-bar {
+    position: fixed;
+    bottom: 20px;
+    right: 80px; /* Left of chat toggle */
+    display: flex;
+    gap: 10px;
+    z-index: 150;
+    background: rgba(0,0,0,0.5);
+    padding: 10px;
+    border-radius: 30px;
+    backdrop-filter: blur(5px);
+    border: 1px solid #444;
+}
+
+.reaction-btn {
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+    padding: 0 5px;
+}
+
+.reaction-btn:hover {
+    transform: scale(1.3);
+}
+
+.floating-emoji {
+    position: fixed;
+    bottom: -50px;
+    font-size: 2rem;
+    pointer-events: none;
+    z-index: 999;
+}
+
+/* CSS Toggle Switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #333;
+  transition: .4s;
+  border-radius: 34px;
+  border: 1px solid #555;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px var(--accent);
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     #game-area {
@@ -669,5 +758,9 @@ button {
         position: relative;
         top: 0;
         margin-bottom: 0.5rem;
+    }
+    #reaction-bar {
+        right: 10px;
+        bottom: 70px; /* Above chat toggle? */
     }
 }
