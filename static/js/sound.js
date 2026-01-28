@@ -112,6 +112,40 @@ class SoundManager {
     playPop() {
         this.playTone(600, 'sine', 0.1, 0.1);
     }
+
+    playTurnAlert() {
+        // Distinct chime for "Your Turn"
+        if (!this.enabled || !this.ctx) return;
+        this.resumeContext();
+        try {
+            // Ding-Dong effect
+            const now = this.ctx.currentTime;
+            this.playTone(600, 'sine', 0.5, 0.2); // Ding
+            setTimeout(() => this.playTone(450, 'sine', 0.8, 0.2), 300); // Dong
+        } catch(e) {
+            console.warn("Turn alert failed", e);
+        }
+    }
+
+    playFanfare() {
+        // Epic fanfare for "You are Czar"
+        if (!this.enabled || !this.ctx) return;
+        this.resumeContext();
+        try {
+            const now = this.ctx.currentTime;
+            // Trumpet-like sequence: Ta-da-da-DAAA!
+            const type = 'sawtooth';
+            // Note frequencies roughly: C4, E4, G4, C5
+            const vol = 0.15;
+
+            this.playTone(523.25, type, 0.1, vol); // C5
+            setTimeout(() => this.playTone(523.25, type, 0.1, vol), 150);
+            setTimeout(() => this.playTone(523.25, type, 0.1, vol), 300);
+            setTimeout(() => this.playTone(698.46, type, 0.6, vol), 450); // F5
+        } catch(e) {
+            console.warn("Fanfare failed", e);
+        }
+    }
 }
 
 const soundManager = new SoundManager();

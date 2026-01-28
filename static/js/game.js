@@ -48,6 +48,7 @@ const pauseBtn = document.getElementById('pause-btn');
 const stopBtn = document.getElementById('stop-btn');
 const pauseOverlay = document.getElementById('pause-overlay');
 const resumeOverlayBtn = document.getElementById('resume-overlay-btn');
+const copyLinkBtn = document.getElementById('copy-link-btn');
 
 // Blank Modal
 const blankModal = document.getElementById('blank-card-modal');
@@ -75,6 +76,7 @@ let pickAmount = 1;
 let selectedCards = []; // Lista tekstów wybranych kart (strings)
 let pendingBlankCard = null; // Przechowuje element DOM karty, którą edytujemy
 let remainingRerolls = 3;
+let lastGameState = 'LOBBY';
 
 // --- LOGOWANIE I INICJALIZACJA ---
 
@@ -83,6 +85,13 @@ window.addEventListener('load', () => {
     const savedToken = localStorage.getItem('cah_token');
     if (savedToken) {
         socket.emit('join_game', { token: savedToken });
+    }
+
+    const savedVol = localStorage.getItem('cah_volume');
+    if (savedVol && volumeSlider) {
+        volumeSlider.value = savedVol;
+        volumeVal.textContent = savedVol + '%';
+        soundManager.setVolume(savedVol / 100);
     }
 });
 
@@ -104,6 +113,7 @@ if(volumeSlider) {
         const val = e.target.value;
         volumeVal.textContent = val + '%';
         soundManager.setVolume(val / 100);
+        localStorage.setItem('cah_volume', val);
     });
 }
 if(infiniteTimerCheck) {
@@ -155,6 +165,47 @@ if(resumeOverlayBtn) {
         socket.emit('toggle_pause');
     });
 }
+
+if(copyLinkBtn) {
+    copyLinkBtn.addEventListener('click', () => {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => {
+            showToast('Link skopiowany do schowka!');
+            soundManager.playClick();
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            prompt("Skopiuj link ręcznie:", url);
+        });
+    });
+}
+
+// Keyboard Shortcuts
+document.addEventListener('keydown', (e) => {
+    // Ignore if typing in inputs
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (gameState !== 'SELECTION' || isCzar) return;
+
+    const key = e.key;
+
+    // Number keys 1-9, 0
+    if (/^[0-9]$/.test(key)) {
+        let idx = parseInt(key);
+        if (idx === 0) idx = 10;
+        idx -= 1; // 0-based index
+
+        const cards = handContainer.children;
+        if (idx >= 0 && idx < cards.length) {
+            cards[idx].click();
+        }
+    }
+
+    // Enter/Space to confirm
+    if (key === 'Enter' || key === ' ') {
+        if (!confirmPlayBtn.disabled) {
+            confirmPlayBtn.click();
+        }
+    }
+});
 
 // Blank Card Modal Events
 if(confirmBlankBtn) {
@@ -442,6 +493,20 @@ function handleGameUpdate(data) {
         pauseOverlay.classList.add('hidden');
         if(pauseBtn) pauseBtn.textContent = '⏸ Pauza';
     }
+
+    // Sound Triggers
+    if (gameState === 'SELECTION' && lastGameState !== 'SELECTION') {
+        if (isCzar) {
+            soundManager.playFanfare();
+        } else {
+            // Only play turn alert if not spectator
+            const me = data.players.find(p => p.nickname === myNickname);
+            if (me && !me.is_spectator) {
+                soundManager.playTurnAlert();
+            }
+        }
+    }
+    lastGameState = gameState;
 
     // Debug Expose
     window.isHost = isHost;
