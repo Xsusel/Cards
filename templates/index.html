@@ -104,11 +104,16 @@
             </div>
             <div class="setting-item">
                 <label>Czas na rundę (s):</label>
-                <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 15px;">
                     <input type="number" id="set-timer" min="10" max="300" value="60">
-                    <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 5px; cursor: pointer; color: #aaa;">
-                        <input type="checkbox" id="infinite-timer-check"> Bez limitu
-                    </label>
+
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label class="switch">
+                            <input type="checkbox" id="infinite-timer-check">
+                            <span class="slider"></span>
+                        </label>
+                        <span style="font-size: 0.9rem; color: #aaa;">Bez limitu</span>
+                    </div>
                 </div>
             </div>
             <div class="setting-item">
@@ -119,15 +124,17 @@
             <hr style="border: 0; border-top: 1px solid #333; margin: 1rem 0;">
 
             <div class="setting-item">
-                <label style="cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                <label>Tryb Demokracja</label>
+                <label class="switch">
                     <input type="checkbox" id="set-democracy">
-                    Tryb Demokracja (Głosowanie)
+                    <span class="slider"></span>
                 </label>
             </div>
              <div class="setting-item">
-                <label style="cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                <label>Zezwól na własne karty</label>
+                <label class="switch">
                     <input type="checkbox" id="set-custom-cards">
-                    Zezwól na własne karty
+                    <span class="slider"></span>
                 </label>
             </div>
             <div class="setting-item">
