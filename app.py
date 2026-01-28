@@ -155,8 +155,81 @@ class Game:
                 socketio.emit('timer_update', {'time': self.timer})
 
         if self.timer == 0 and self.state == 'SELECTION':
-            # Time's up!
-            socketio.emit('message', {'text': 'Czas minął!'})
+            # Time's up! Auto-play for those who haven't played
+            socketio.emit('message', {'text': 'Czas minął! Automatyczny wybór kart.'})
+
+            # Identify players who need to play
+            pick_needed = self.current_black_card.get('pick', 1)
+
+            # Copy keys to avoid iteration issues
+            all_sids = list(self.players.keys())
+
+            for sid in all_sids:
+                if sid not in self.players: continue
+                p = self.players[sid]
+
+                # Skip Czar, Spectators, and those who already played
+                if p.get('is_spectator', False): continue
+                if p.get('is_czar', False): continue
+                if any(c['sid'] == sid for c in self.table_cards): continue
+
+                # Auto pick
+                hand = p['hand']
+                if len(hand) >= pick_needed:
+                    selected = random.sample(hand, pick_needed)
+                    final_selected = []
+                    for card in selected:
+                        if card == '<<BLANK>>':
+                            final_selected.append('PUSTAK (Auto)')
+                        else:
+                            final_selected.append(card)
+
+                    self.play_cards_logic(sid, final_selected, is_auto=True)
+                    socketio.emit('message', {'text': f'Gracz {p["nickname"]} zagrał losowo!'})
+
+    def play_cards_logic(self, sid, cards, is_auto=False):
+        if sid not in self.players: return False
+
+        player = self.players[sid]
+        hand = player['hand']
+        temp_hand = list(hand)
+        final_cards_for_table = []
+
+        for c in cards:
+            if c in temp_hand:
+                temp_hand.remove(c)
+                final_cards_for_table.append(c)
+            elif '<<BLANK>>' in temp_hand:
+                temp_hand.remove('<<BLANK>>')
+                if is_auto:
+                    final_cards_for_table.append(c)
+                else:
+                    sanitized = str(c).replace('<', '&lt;').replace('>', '&gt;')[:100]
+                    final_cards_for_table.append(sanitized)
+            else:
+                return False
+
+        player['hand'] = temp_hand
+
+        self.table_cards.append({
+            'sid': sid,
+            'cards': final_cards_for_table,
+            'nickname': player['nickname']
+        })
+
+        self.broadcast_state()
+
+        # Check if all active players (except Czar and Spectators) played
+        active_players = [p for p in self.players.values() if not p.get('is_spectator', False)]
+        players_needed = len(active_players) - 1
+
+        if len(self.table_cards) >= players_needed:
+            self.state = 'JUDGING'
+            self.stop_timer()
+            random.shuffle(self.table_cards)
+            self.broadcast_state()
+
+        return True
 
     def broadcast_state(self):
         public_players = []
@@ -393,42 +466,24 @@ def on_play_cards(data):
         emit('error', {'message': f'Musisz wybrać {pick_needed} kart!'})
         return
 
+    # Call the logic method
+    # Pre-validation for client error feedback
     hand = game.players[sid]['hand']
     temp_hand = list(hand)
-    final_cards_for_table = []
 
-    # Validation logic with Blank support
+    # Check if user has these cards
     for c in cards:
         if c in temp_hand:
             temp_hand.remove(c)
-            final_cards_for_table.append(c)
         elif '<<BLANK>>' in temp_hand:
-            sanitized = str(c).replace('<', '&lt;').replace('>', '&gt;')[:100]
             temp_hand.remove('<<BLANK>>')
-            final_cards_for_table.append(sanitized)
         else:
             emit('error', {'message': 'Nie masz tej karty!'})
             return
 
-    game.players[sid]['hand'] = temp_hand
-
-    game.table_cards.append({
-        'sid': sid,
-        'cards': final_cards_for_table,
-        'nickname': game.players[sid]['nickname']
-    })
-
-    game.broadcast_state()
-
-    # Check if all active players (except Czar and Spectators) played
-    active_players = [p for p in game.players.values() if not p.get('is_spectator', False)]
-    players_needed = len(active_players) - 1
-
-    if len(game.table_cards) >= players_needed:
-        game.state = 'JUDGING'
-        game.stop_timer()
-        random.shuffle(game.table_cards)
-        game.broadcast_state()
+    success = game.play_cards_logic(sid, cards, is_auto=False)
+    if not success:
+         emit('error', {'message': 'Błąd zagrywania kart.'})
 
 @socketio.on('select_winner')
 def on_select_winner(data):
