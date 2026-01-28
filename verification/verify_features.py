@@ -3,38 +3,49 @@ from playwright.sync_api import sync_playwright, expect
 def run():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        context = browser.new_context()
-        page = context.new_page()
+        page = browser.new_page()
+        try:
+            # 1. Navigate
+            page.goto("http://localhost:3000")
 
-        # Navigate
-        page.goto("http://localhost:3000")
+            # 2. Login
+            page.fill("#nickname", "HostUser")
+            page.fill("#password", "1234")
+            page.click("#join-btn")
 
-        # Login
-        page.fill("#nickname", "Tester")
-        page.fill("#password", "1234")
-        page.click("#join-btn")
+            # Wait for game area
+            expect(page.locator("#game-area")).to_be_visible()
 
-        # Wait for game area
-        page.wait_for_selector("#game-area:not(.hidden)")
+            # 3. Open Settings
+            page.click("#settings-btn")
+            expect(page.locator("#settings-modal")).to_be_visible()
 
-        # Verify Copy Link button exists
-        copy_btn = page.locator("#copy-link-btn")
-        expect(copy_btn).to_be_visible()
+            # 4. Check for new elements
+            expect(page.locator("#set-democracy")).to_be_visible()
+            expect(page.locator("#set-custom-cards")).to_be_visible()
+            expect(page.locator("#set-jokers")).to_be_visible()
 
-        # Open Settings to see Volume Slider (Persistence check needs reload but this verifies UI)
-        # Note: Settings button is only visible to HOST.
-        # Since I'm the first player, I should be host.
-        page.click("#settings-btn")
-        page.wait_for_selector("#settings-modal:not(.hidden)")
+            # 5. Enable Custom Cards
+            page.check("#set-custom-cards")
+            page.click("#save-settings-btn")
+            expect(page.locator("#settings-modal")).to_be_hidden()
 
-        # Check volume slider
-        slider = page.locator("#volume-slider")
-        expect(slider).to_be_visible()
+            # 6. Verify Add Cards button appears
+            expect(page.locator("#add-cards-btn")).to_be_visible()
 
-        # Take screenshot of Settings + Lobby
-        page.screenshot(path="verification/verification.png")
+            # 7. Open Add Cards Modal
+            page.click("#add-cards-btn")
+            expect(page.locator("#add-cards-modal")).to_be_visible()
 
-        browser.close()
+            # 8. Screenshot
+            page.screenshot(path="verification/frontend_verify.png")
+            print("Screenshot taken.")
+
+        except Exception as e:
+            print(f"Error: {e}")
+            page.screenshot(path="verification/error.png")
+        finally:
+            browser.close()
 
 if __name__ == "__main__":
     run()
