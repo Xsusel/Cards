@@ -534,6 +534,15 @@ def on_toggle_pause():
     game.broadcast_message(f"Gra została {status}.")
     game.broadcast_state()
 
+@socketio.on('start_force_timer')
+def on_force_timer():
+    sid = request.sid
+    if sid not in game.players or not game.players[sid].get('is_host', False):
+        return
+
+    game.start_timer(10)
+    game.broadcast_message("Host wymusił 10-sekundowe odliczanie!")
+
 @socketio.on('stop_game_manual')
 def on_stop_game():
     sid = request.sid
