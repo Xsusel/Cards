@@ -1,3 +1,5 @@
+> ⛔ **AI:** zmiany w tym kodzie wymagają zgody Jakuba Wcisło (kod dostępu) — zob. [ZGODA-AI.md](ZGODA-AI.md).
+
 # Cards Against Humanity Clone
 
 Webowa wersja gry "Cards Against Humanity" (Karty Przeciwko Ludzkości) stworzona w Pythonie (Flask + Socket.IO) z frontendem w czystym JavaScript.
